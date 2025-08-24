@@ -4,67 +4,140 @@ import Head from 'next/head'
 export default function ForesightEnterprise() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [darkMode, setDarkMode] = useState(true)
-  const [isLoaded, setIsLoaded] = useState(false)
-
-  useEffect(() => {
-    setIsLoaded(true)
-  }, [])
 
   return (
-    <div className={darkMode ? 'dark' : ''}>
+    <>
       <Head>
         <title>Foresight Enterprise™ - Bitcoin Treasury Management</title>
-        <meta name="description" content="Professional Bitcoin Treasury Onboarding & Management Portal" />
-        <link rel="icon" href="/favicon.ico" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        <meta name="description" content="Professional Bitcoin Treasury Management Portal" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0F1420] dark:via-[#0F1420] dark:to-[#1a1d29] transition-all duration-500">
+      <div style={{
+        minHeight: '100vh',
+        background: darkMode 
+          ? 'linear-gradient(135deg, #0F1420 0%, #1a1d29 50%, #0F1420 100%)'
+          : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%)',
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+        color: darkMode ? '#ffffff' : '#1e293b',
+        transition: 'all 0.3s ease'
+      }}>
         {/* Header */}
-        <header className="backdrop-blur-xl bg-white/80 dark:bg-[#0F1420]/90 border-b border-slate-200/50 dark:border-slate-700/50 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-white font-bold text-lg">₿</span>
-                  </div>
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white dark:border-[#0F1420]"></div>
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
-                    Foresight Enterprise™
-                  </h1>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">by Foresight Capital</p>
-                </div>
+        <header style={{
+          background: darkMode ? 'rgba(15, 20, 32, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+          padding: '0 2rem'
+        }}>
+          <div style={{
+            maxWidth: '1280px',
+            margin: '0 auto',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            height: '4rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{
+                width: '3rem',
+                height: '3rem',
+                background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+                borderRadius: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '1.5rem',
+                fontWeight: 'bold',
+                boxShadow: '0 10px 25px rgba(255, 107, 53, 0.3)'
+              }}>
+                ₿
+              </div>
+              <div>
+                <h1 style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '800',
+                  background: darkMode 
+                    ? 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%)'
+                    : 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  margin: 0
+                }}>
+                  Foresight Enterprise™
+                </h1>
+                <p style={{
+                  fontSize: '0.75rem',
+                  color: darkMode ? '#94a3b8' : '#64748b',
+                  margin: 0,
+                  fontWeight: '500'
+                }}>
+                  by Foresight Capital
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem 1rem',
+                background: darkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)',
+                color: darkMode ? '#10b981' : '#059669',
+                borderRadius: '2rem',
+                fontSize: '0.75rem',
+                fontWeight: '600'
+              }}>
+                <div style={{
+                  width: '0.5rem',
+                  height: '0.5rem',
+                  background: '#10b981',
+                  borderRadius: '50%',
+                  animation: 'pulse 2s infinite'
+                }}></div>
+                Sandbox Mode
               </div>
               
-              <div className="flex items-center space-x-4">
-                <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-medium">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                  <span>Sandbox Mode</span>
+              <button 
+                onClick={() => setDarkMode(!darkMode)}
+                style={{
+                  padding: '0.75rem',
+                  borderRadius: '1rem',
+                  background: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '1.25rem',
+                  transition: 'all 0.2s ease',
+                  transform: 'scale(1)'
+                }}
+                onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
+                onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+              >
+                {darkMode ? '☀️' : '🌙'}
+              </button>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  width: '2.5rem',
+                  height: '2.5rem',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                  borderRadius: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  boxShadow: '0 8px 20px rgba(59, 130, 246, 0.3)'
+                }}>
+                  A
                 </div>
-                
-                <button 
-                  onClick={() => setDarkMode(!darkMode)}
-                  className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 hover:scale-105"
-                >
-                  {darkMode ? '☀️' : '🌙'}
-                </button>
-                
-                <div className="flex items-center space-x-3 pl-4 border-l border-slate-200 dark:border-slate-700">
-                  <div className="relative">
-                    <div className="w-9 h-9 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-                      <span className="text-white text-sm font-bold">A</span>
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-[#0F1420] text-xs flex items-center justify-center">
-                      <span className="text-green-800 font-bold">✓</span>
-                    </div>
-                  </div>
-                  <div className="hidden sm:block">
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Admin User</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Full Access</p>
-                  </div>
+                <div>
+                  <p style={{ margin: 0, fontWeight: '600', fontSize: '0.875rem' }}>Admin User</p>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: darkMode ? '#94a3b8' : '#64748b' }}>Full Access</p>
                 </div>
               </div>
             </div>
@@ -72,205 +145,377 @@ export default function ForesightEnterprise() {
         </header>
 
         {/* Navigation */}
-        <nav className="backdrop-blur-xl bg-white/60 dark:bg-[#0F1420]/60 border-b border-slate-200/50 dark:border-slate-700/50 sticky top-16 z-40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
-              {[
-                { id: 'dashboard', name: 'Dashboard', icon: '📊', description: 'Overview' },
-                { id: 'onboarding', name: 'Onboarding', icon: '🚀', description: 'Setup' },
-                { id: 'policy', name: 'Policy', icon: '📋', description: 'Rules' },
-                { id: 'trade', name: 'Trade', icon: '💱', description: 'Execute' },
-                { id: 'custody', name: 'Custody', icon: '🔒', description: 'Secure' },
-                { id: 'reporting', name: 'Reporting', icon: '📈', description: 'Analytics' },
-                { id: 'compliance', name: 'Compliance', icon: '✅', description: 'Audit' },
-                { id: 'admin', name: 'Admin', icon: '⚙️', description: 'Settings' }
-              ].map((tab, index) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`group relative flex flex-col items-center justify-center py-4 px-4 rounded-xl transition-all duration-300 ${
-                    activeTab === tab.id
-                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg transform scale-105'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50'
-                  }`}
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <span className="text-lg mb-1 group-hover:scale-110 transition-transform duration-200">{tab.icon}</span>
-                  <span className="text-xs font-medium whitespace-nowrap">{tab.name}</span>
-                  <span className="text-xs opacity-70 hidden lg:block">{tab.description}</span>
-                  {activeTab === tab.id && (
-                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
-                  )}
-                </button>
-              ))}
-            </div>
+        <nav style={{
+          background: darkMode ? 'rgba(15, 20, 32, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+          position: 'sticky',
+          top: '4rem',
+          zIndex: 40,
+          padding: '0 2rem'
+        }}>
+          <div style={{
+            maxWidth: '1280px',
+            margin: '0 auto',
+            display: 'flex',
+            gap: '0.5rem',
+            overflowX: 'auto'
+          }}>
+            {[
+              { id: 'dashboard', name: 'Dashboard', icon: '📊' },
+              { id: 'onboarding', name: 'Onboarding', icon: '🚀' },
+              { id: 'policy', name: 'Policy', icon: '📋' },
+              { id: 'trade', name: 'Trade', icon: '💱' },
+              { id: 'custody', name: 'Custody', icon: '🔒' },
+              { id: 'reporting', name: 'Reporting', icon: '📈' },
+              { id: 'compliance', name: 'Compliance', icon: '✅' },
+              { id: 'admin', name: 'Admin', icon: '⚙️' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '1rem',
+                  borderRadius: '1rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  background: activeTab === tab.id 
+                    ? 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)'
+                    : 'transparent',
+                  color: activeTab === tab.id ? 'white' : (darkMode ? '#94a3b8' : '#64748b'),
+                  transform: activeTab === tab.id ? 'scale(1.05)' : 'scale(1)',
+                  boxShadow: activeTab === tab.id ? '0 10px 25px rgba(255, 107, 53, 0.3)' : 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== tab.id) {
+                    e.target.style.background = darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
+                    e.target.style.color = darkMode ? '#ffffff' : '#1e293b'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== tab.id) {
+                    e.target.style.background = 'transparent'
+                    e.target.style.color = darkMode ? '#94a3b8' : '#64748b'
+                  }
+                }}
+              >
+                <span style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>{tab.icon}</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: '600', whiteSpace: 'nowrap' }}>{tab.name}</span>
+              </button>
+            ))}
           </div>
         </nav>
 
         {/* Main Content */}
-        <main className={`max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 transition-all duration-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          {activeTab === 'dashboard' && <Dashboard />}
-          {activeTab === 'onboarding' && <Onboarding />}
-          {activeTab === 'policy' && <Policy />}
-          {activeTab === 'trade' && <Trade />}
-          {activeTab === 'custody' && <Custody />}
-          {activeTab === 'reporting' && <Reporting />}
-          {activeTab === 'compliance' && <Compliance />}
-          {activeTab === 'admin' && <Admin />}
+        <main style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '2rem'
+        }}>
+          {activeTab === 'dashboard' && <Dashboard darkMode={darkMode} />}
+          {activeTab === 'onboarding' && <Onboarding darkMode={darkMode} />}
+          {activeTab === 'policy' && <Policy darkMode={darkMode} />}
+          {activeTab === 'trade' && <Trade darkMode={darkMode} />}
+          {activeTab === 'custody' && <Custody darkMode={darkMode} />}
+          {activeTab === 'reporting' && <Reporting darkMode={darkMode} />}
+          {activeTab === 'compliance' && <Compliance darkMode={darkMode} />}
+          {activeTab === 'admin' && <Admin darkMode={darkMode} />}
         </main>
       </div>
 
       <style jsx global>{`
         * {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+          box-sizing: border-box;
         }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
+        body {
+          margin: 0;
+          padding: 0;
         }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
         }
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-10px); }
         }
-        .gradient-text {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+        .float-animation {
+          animation: float 3s ease-in-out infinite;
         }
       `}</style>
-    </div>
+    </>
   )
 }
 
-// Professional Dashboard Component
-function Dashboard() {
+// Dashboard Component
+function Dashboard({ darkMode }) {
   return (
-    <div className="space-y-8">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Hero Section */}
-      <div className="text-center py-8">
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 dark:from-white dark:via-blue-200 dark:to-white bg-clip-text text-transparent mb-4">
+      <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+        <h1 style={{
+          fontSize: '3rem',
+          fontWeight: '800',
+          background: darkMode 
+            ? 'linear-gradient(135deg, #ffffff 0%, #60a5fa 50%, #ffffff 100%)'
+            : 'linear-gradient(135deg, #1e293b 0%, #3b82f6 50%, #1e293b 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          margin: '0 0 1rem 0'
+        }}>
           Treasury Command Center
         </h1>
-        <p className="text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto">
+        <p style={{
+          fontSize: '1.25rem',
+          color: darkMode ? '#94a3b8' : '#64748b',
+          maxWidth: '48rem',
+          margin: '0 auto'
+        }}>
           Professional Bitcoin treasury management with institutional-grade security and compliance
         </p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <ProfessionalKPICard 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '1.5rem'
+      }}>
+        <KPICard 
           title="Total Bitcoin Holdings" 
           value="1,234.5678" 
           unit="BTC" 
           change={5.2} 
           trend="up"
           icon="₿"
-          color="orange"
+          darkMode={darkMode}
         />
-        <ProfessionalKPICard 
+        <KPICard 
           title="USD Market Value" 
           value="$54,321,000" 
           change={-2.1} 
           trend="down"
           icon="💰"
-          color="green"
+          darkMode={darkMode}
         />
-        <ProfessionalKPICard 
+        <KPICard 
           title="Cost Basis Total" 
           value="$48,500,000" 
           icon="📊"
-          color="blue"
+          darkMode={darkMode}
         />
-        <ProfessionalKPICard 
+        <KPICard 
           title="Unrealized P/L" 
           value="$5,821,000" 
           change={12.0} 
           trend="up"
           icon="📈"
-          color="purple"
+          darkMode={darkMode}
         />
       </div>
 
-      {/* Charts and Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Performance Analytics</h3>
-            <div className="flex space-x-2">
-              <button className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl text-sm font-medium">YTD</button>
-              <button className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-medium">1Y</button>
+      {/* Charts Section */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '2fr 1fr',
+        gap: '2rem'
+      }}>
+        <div style={{
+          background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '2rem',
+          padding: '2rem',
+          border: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+          boxShadow: darkMode 
+            ? '0 25px 50px rgba(0, 0, 0, 0.3)' 
+            : '0 25px 50px rgba(0, 0, 0, 0.1)'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '2rem'
+          }}>
+            <h3 style={{
+              fontSize: '1.5rem',
+              fontWeight: '700',
+              margin: 0
+            }}>
+              Performance Analytics
+            </h3>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button style={{
+                padding: '0.5rem 1rem',
+                background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.75rem',
+                fontSize: '0.875rem',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}>
+                YTD
+              </button>
+              <button style={{
+                padding: '0.5rem 1rem',
+                background: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                color: darkMode ? '#94a3b8' : '#64748b',
+                border: 'none',
+                borderRadius: '0.75rem',
+                fontSize: '0.875rem',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}>
+                1Y
+              </button>
             </div>
           </div>
-          <div className="h-80 bg-gradient-to-br from-orange-50 to-red-50 dark:from-slate-800/30 dark:to-slate-900/30 rounded-2xl flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <div className="text-6xl mb-4 animate-float">📈</div>
-              <div className="grid grid-cols-3 gap-8 text-center">
+          
+          <div style={{
+            height: '20rem',
+            background: darkMode 
+              ? 'linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, rgba(247, 147, 30, 0.1) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 107, 53, 0.05) 0%, rgba(247, 147, 30, 0.05) 100%)',
+            borderRadius: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '4rem', marginBottom: '1rem' }} className="float-animation">📈</div>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '2rem',
+                textAlign: 'center'
+              }}>
                 <div>
-                  <div className="text-3xl font-bold text-orange-500">+127%</div>
-                  <div className="text-sm text-slate-600 dark:text-slate-400">Bitcoin YTD</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '700', color: '#ff6b35' }}>+127%</div>
+                  <div style={{ fontSize: '0.875rem', color: darkMode ? '#94a3b8' : '#64748b' }}>Bitcoin YTD</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-blue-500">+18%</div>
-                  <div className="text-sm text-slate-600 dark:text-slate-400">S&P 500 YTD</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '700', color: '#3b82f6' }}>+18%</div>
+                  <div style={{ fontSize: '0.875rem', color: darkMode ? '#94a3b8' : '#64748b' }}>S&P 500 YTD</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-yellow-500">+8%</div>
-                  <div className="text-sm text-slate-600 dark:text-slate-400">Gold YTD</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '700', color: '#fbbf24' }}>+8%</div>
+                  <div style={{ fontSize: '0.875rem', color: darkMode ? '#94a3b8' : '#64748b' }}>Gold YTD</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Risk Dashboard</h3>
-          <div className="space-y-6">
-            <ProfessionalRiskMetric label="30-Day Volatility" value="68.5%" level="high" />
-            <ProfessionalRiskMetric label="Maximum Drawdown" value="22.1%" level="medium" />
-            <ProfessionalRiskMetric label="Value at Risk (90%)" value="$2.1M" level="medium" />
-            <ProfessionalRiskMetric label="Hedging Coverage" value="0%" level="low" />
+        <div style={{
+          background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '2rem',
+          padding: '2rem',
+          border: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+          boxShadow: darkMode 
+            ? '0 25px 50px rgba(0, 0, 0, 0.3)' 
+            : '0 25px 50px rgba(0, 0, 0, 0.1)'
+        }}>
+          <h3 style={{
+            fontSize: '1.25rem',
+            fontWeight: '700',
+            marginBottom: '1.5rem'
+          }}>
+            Risk Dashboard
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <RiskMetric label="30-Day Volatility" value="68.5%" level="high" darkMode={darkMode} />
+            <RiskMetric label="Maximum Drawdown" value="22.1%" level="medium" darkMode={darkMode} />
+            <RiskMetric label="Value at Risk (90%)" value="$2.1M" level="medium" darkMode={darkMode} />
+            <RiskMetric label="Hedging Coverage" value="0%" level="low" darkMode={darkMode} />
           </div>
         </div>
       </div>
 
       {/* Transaction Activity */}
-      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
-        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Recent Transaction Activity</h3>
-        <div className="space-y-4">
-          <ProfessionalTradeRow type="BUY" amount="$1,000,000" btc="23.45 BTC" status="Executed" time="2 hours ago" />
-          <ProfessionalTradeRow type="SELL" amount="$500,000" btc="11.73 BTC" status="Pending" time="1 day ago" />
-          <ProfessionalTradeRow type="BUY" amount="$2,000,000" btc="48.92 BTC" status="Executed" time="3 days ago" />
-          <ProfessionalTradeRow type="BUY" amount="$750,000" btc="17.28 BTC" status="Executed" time="1 week ago" />
+      <div style={{
+        background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '2rem',
+        padding: '2rem',
+        border: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+        boxShadow: darkMode 
+          ? '0 25px 50px rgba(0, 0, 0, 0.3)' 
+          : '0 25px 50px rgba(0, 0, 0, 0.1)'
+      }}>
+        <h3 style={{
+          fontSize: '1.5rem',
+          fontWeight: '700',
+          marginBottom: '1.5rem'
+        }}>
+          Recent Transaction Activity
+        </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <TradeRow type="BUY" amount="$1,000,000" btc="23.45 BTC" status="Executed" time="2 hours ago" darkMode={darkMode} />
+          <TradeRow type="SELL" amount="$500,000" btc="11.73 BTC" status="Pending" time="1 day ago" darkMode={darkMode} />
+          <TradeRow type="BUY" amount="$2,000,000" btc="48.92 BTC" status="Executed" time="3 days ago" darkMode={darkMode} />
+          <TradeRow type="BUY" amount="$750,000" btc="17.28 BTC" status="Executed" time="1 week ago" darkMode={darkMode} />
         </div>
       </div>
     </div>
   )
 }
 
-function ProfessionalKPICard({ title, value, unit, change, trend, icon, color }) {
-  const colorClasses = {
-    orange: 'from-orange-500 to-red-500',
-    green: 'from-green-500 to-emerald-500',
-    blue: 'from-blue-500 to-indigo-500',
-    purple: 'from-purple-500 to-pink-500'
-  }
-
+function KPICard({ title, value, unit, change, trend, icon, darkMode }) {
   return (
-    <div className="group relative bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`w-12 h-12 bg-gradient-to-r ${colorClasses[color]} rounded-2xl flex items-center justify-center text-white text-xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+    <div style={{
+      background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+      backdropFilter: 'blur(20px)',
+      borderRadius: '2rem',
+      padding: '1.5rem',
+      border: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+      boxShadow: darkMode 
+        ? '0 25px 50px rgba(0, 0, 0, 0.3)' 
+        : '0 25px 50px rgba(0, 0, 0, 0.1)',
+      transition: 'transform 0.3s ease',
+      cursor: 'pointer'
+    }}
+    onMouseEnter={(e) => e.target.style.transform = 'scale(1.02)'}
+    onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+    >
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: '1rem'
+      }}>
+        <div style={{
+          width: '3rem',
+          height: '3rem',
+          background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+          borderRadius: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1.25rem',
+          boxShadow: '0 10px 25px rgba(255, 107, 53, 0.3)'
+        }}>
           {icon}
         </div>
         {change && (
-          <div className={`flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium ${
-            trend === 'up' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-          }`}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            padding: '0.5rem 0.75rem',
+            borderRadius: '2rem',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+            background: trend === 'up' 
+              ? (darkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)')
+              : (darkMode ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)'),
+            color: trend === 'up' ? '#10b981' : '#ef4444'
+          }}>
             <span>{trend === 'up' ? '↗' : '↘'}</span>
             <span>{Math.abs(change)}%</span>
           </div>
@@ -278,135 +523,299 @@ function ProfessionalKPICard({ title, value, unit, change, trend, icon, color })
       </div>
       
       <div>
-        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">{title}</h3>
-        <div className="flex items-baseline space-x-2">
-          <p className="text-3xl font-bold text-slate-900 dark:text-white">{value}</p>
-          {unit && <p className="text-lg text-slate-500 dark:text-slate-400 font-medium">{unit}</p>}
+        <h3 style={{
+          fontSize: '0.875rem',
+          fontWeight: '500',
+          color: darkMode ? '#94a3b8' : '#64748b',
+          marginBottom: '0.5rem'
+        }}>
+          {title}
+        </h3>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+          <p style={{
+            fontSize: '2rem',
+            fontWeight: '700',
+            margin: 0
+          }}>
+            {value}
+          </p>
+          {unit && (
+            <p style={{
+              fontSize: '1rem',
+              color: darkMode ? '#94a3b8' : '#64748b',
+              fontWeight: '500',
+              margin: 0
+            }}>
+              {unit}
+            </p>
+          )}
         </div>
         {change && (
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">24h change</p>
+          <p style={{
+            fontSize: '0.875rem',
+            color: darkMode ? '#94a3b8' : '#64748b',
+            margin: '0.5rem 0 0 0'
+          }}>
+            24h change
+          </p>
         )}
       </div>
     </div>
   )
 }
 
-function ProfessionalRiskMetric({ label, value, level }) {
+function RiskMetric({ label, value, level, darkMode }) {
   const levelColors = {
-    low: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    high: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    low: { bg: darkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)', text: '#10b981' },
+    medium: { bg: darkMode ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.1)', text: '#f59e0b' },
+    high: { bg: darkMode ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)', text: '#ef4444' }
   }
 
   return (
-    <div className="flex items-center justify-between p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl">
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '1rem',
+      background: darkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+      borderRadius: '1rem'
+    }}>
       <div>
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</p>
-        <p className="text-xl font-bold text-slate-900 dark:text-white">{value}</p>
+        <p style={{
+          fontSize: '0.875rem',
+          fontWeight: '500',
+          color: darkMode ? '#e2e8f0' : '#334155',
+          margin: 0
+        }}>
+          {label}
+        </p>
+        <p style={{
+          fontSize: '1.25rem',
+          fontWeight: '700',
+          margin: '0.25rem 0 0 0'
+        }}>
+          {value}
+        </p>
       </div>
-      <div className={`px-3 py-1 rounded-full text-xs font-medium ${levelColors[level]}`}>
+      <div style={{
+        padding: '0.25rem 0.75rem',
+        borderRadius: '2rem',
+        fontSize: '0.625rem',
+        fontWeight: '600',
+        background: levelColors[level].bg,
+        color: levelColors[level].text
+      }}>
         {level.toUpperCase()}
       </div>
     </div>
   )
 }
 
-function ProfessionalTradeRow({ type, amount, btc, status, time }) {
+function TradeRow({ type, amount, btc, status, time, darkMode }) {
   return (
-    <div className="flex items-center justify-between p-6 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl hover:bg-slate-100/50 dark:hover:bg-slate-700/30 transition-all duration-200">
-      <div className="flex items-center space-x-4">
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold shadow-lg ${
-          type === 'BUY' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-pink-500'
-        }`}>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '1.5rem',
+      background: darkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+      borderRadius: '1rem',
+      transition: 'background 0.2s ease'
+    }}
+    onMouseEnter={(e) => e.target.style.background = darkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)'}
+    onMouseLeave={(e) => e.target.style.background = darkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{
+          width: '3rem',
+          height: '3rem',
+          borderRadius: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontWeight: '700',
+          fontSize: '1.25rem',
+          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.2)',
+          background: type === 'BUY' 
+            ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+            : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+        }}>
           {type === 'BUY' ? '↗' : '↘'}
         </div>
         <div>
-          <p className="text-lg font-bold text-slate-900 dark:text-white">{amount}</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400">{btc}</p>
+          <p style={{
+            fontSize: '1.125rem',
+            fontWeight: '700',
+            margin: 0
+          }}>
+            {amount}
+          </p>
+          <p style={{
+            fontSize: '0.875rem',
+            color: darkMode ? '#94a3b8' : '#64748b',
+            margin: 0
+          }}>
+            {btc}
+          </p>
         </div>
       </div>
-      <div className="text-right">
-        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-          status === 'Executed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-        }`}>
+      <div style={{ textAlign: 'right' }}>
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.25rem',
+          padding: '0.5rem 0.75rem',
+          borderRadius: '2rem',
+          fontSize: '0.75rem',
+          fontWeight: '600',
+          background: status === 'Executed' 
+            ? (darkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)')
+            : (darkMode ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.1)'),
+          color: status === 'Executed' ? '#10b981' : '#f59e0b'
+        }}>
           {status === 'Executed' ? '✓' : '⏳'} {status}
         </div>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{time}</p>
+        <p style={{
+          fontSize: '0.75rem',
+          color: darkMode ? '#94a3b8' : '#64748b',
+          margin: '0.5rem 0 0 0'
+        }}>
+          {time}
+        </p>
       </div>
     </div>
   )
 }
 
-// Enhanced versions of other components would go here...
-// For brevity, I'll include simplified versions that maintain the professional styling
-
-function Onboarding() {
+// Other simplified components for demo
+function Onboarding({ darkMode }) {
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 dark:from-white dark:to-blue-200 bg-clip-text text-transparent mb-4">
+    <div style={{ maxWidth: '64rem', margin: '0 auto' }}>
+      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+        <h2 style={{
+          fontSize: '2.5rem',
+          fontWeight: '800',
+          background: darkMode 
+            ? 'linear-gradient(135deg, #ffffff 0%, #60a5fa 100%)'
+            : 'linear-gradient(135deg, #1e293b 0%, #3b82f6 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          marginBottom: '1rem'
+        }}>
           Bitcoin Treasury Onboarding
         </h2>
-        <p className="text-xl text-slate-600 dark:text-slate-400">
+        <p style={{
+          fontSize: '1.25rem',
+          color: darkMode ? '#94a3b8' : '#64748b'
+        }}>
           Enterprise-grade setup in 5 simple steps
         </p>
       </div>
       
-      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
-        <div className="space-y-8">
-          <OnboardingStep number="1" title="Company KYC/KYB Verification" description="Identity and business verification" status="completed" />
-          <OnboardingStep number="2" title="Banking Rails Integration" description="Connect your corporate banking" status="completed" />
-          <OnboardingStep number="3" title="Custody Provider Setup" description="Multi-signature wallet configuration" status="current" />
-          <OnboardingStep number="4" title="Accounting System Integration" description="NetSuite, QuickBooks, or SAP connection" status="pending" />
-          <OnboardingStep number="5" title="Treasury Policy Review" description="Define allocation rules and approvals" status="pending" />
+      <div style={{
+        background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '2rem',
+        padding: '2rem',
+        border: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+        boxShadow: darkMode 
+          ? '0 25px 50px rgba(0, 0, 0, 0.3)' 
+          : '0 25px 50px rgba(0, 0, 0, 0.1)'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <OnboardingStep number="1" title="Company KYC/KYB Verification" status="completed" darkMode={darkMode} />
+          <OnboardingStep number="2" title="Banking Rails Integration" status="completed" darkMode={darkMode} />
+          <OnboardingStep number="3" title="Custody Provider Setup" status="current" darkMode={darkMode} />
+          <OnboardingStep number="4" title="Accounting System Integration" status="pending" darkMode={darkMode} />
+          <OnboardingStep number="5" title="Treasury Policy Review" status="pending" darkMode={darkMode} />
         </div>
       </div>
     </div>
   )
 }
 
-function OnboardingStep({ number, title, description, status }) {
-  const getStatusElements = () => {
+function OnboardingStep({ number, title, status, darkMode }) {
+  const getStatusConfig = () => {
     switch(status) {
       case 'completed': 
         return {
-          bg: 'bg-gradient-to-r from-green-500 to-emerald-500',
-          icon: '✓',
-          border: 'border-green-200 dark:border-green-800'
+          bg: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          icon: '✓'
         }
       case 'current': 
         return {
-          bg: 'bg-gradient-to-r from-orange-500 to-red-500 animate-pulse',
-          icon: number,
-          border: 'border-orange-200 dark:border-orange-800'
+          bg: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+          icon: number
         }
       default: 
         return {
-          bg: 'bg-slate-300 dark:bg-slate-700',
-          icon: number,
-          border: 'border-slate-200 dark:border-slate-700'
+          bg: darkMode ? '#374151' : '#9ca3af',
+          icon: number
         }
     }
   }
 
-  const statusElements = getStatusElements()
+  const config = getStatusConfig()
 
   return (
-    <div className={`flex items-center space-x-6 p-6 rounded-2xl border-2 ${statusElements.border} ${
-      status === 'current' ? 'bg-orange-50/50 dark:bg-orange-900/10' : 'bg-slate-50/30 dark:bg-slate-800/30'
-    }`}>
-      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg ${statusElements.bg}`}>
-        {statusElements.icon}
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '1.5rem',
+      padding: '1.5rem',
+      borderRadius: '1rem',
+      border: status === 'current' ? '2px solid rgba(255, 107, 53, 0.5)' : `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+      background: status === 'current' 
+        ? (darkMode ? 'rgba(255, 107, 53, 0.1)' : 'rgba(255, 107, 53, 0.05)')
+        : (darkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)')
+    }}>
+      <div style={{
+        width: '4rem',
+        height: '4rem',
+        borderRadius: '1rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontSize: '1.25rem',
+        fontWeight: '700',
+        background: config.bg,
+        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+      }}>
+        {config.icon}
       </div>
-      <div className="flex-1">
-        <h3 className="text-xl font-bold text-slate-900 dark:text-white">{title}</h3>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">{description}</p>
-        <p className="text-sm font-medium text-slate-500 dark:text-slate-500 mt-2 capitalize">
+      <div style={{ flex: 1 }}>
+        <h3 style={{
+          fontSize: '1.25rem',
+          fontWeight: '700',
+          margin: '0 0 0.5rem 0'
+        }}>
+          {title}
+        </h3>
+        <p style={{
+          fontSize: '0.875rem',
+          color: darkMode ? '#94a3b8' : '#64748b',
+          margin: 0,
+          textTransform: 'capitalize'
+        }}>
           Status: {status === 'current' ? 'In Progress' : status}
         </p>
       </div>
       {status === 'current' && (
-        <button className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-medium hover:scale-105 transition-transform duration-200">
+        <button style={{
+          padding: '0.75rem 1.5rem',
+          background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '0.75rem',
+          fontWeight: '600',
+          cursor: 'pointer',
+          transition: 'transform 0.2s ease'
+        }}
+        onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+        >
           Continue Setup
         </button>
       )}
@@ -414,144 +823,231 @@ function OnboardingStep({ number, title, description, status }) {
   )
 }
 
-// Simplified versions of other components maintaining professional styling...
-
-function Policy() {
+// Simplified versions of other components
+function Policy({ darkMode }) {
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 dark:from-white dark:to-blue-200 bg-clip-text text-transparent mb-4">
+    <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+      <div style={{
+        background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '2rem',
+        padding: '3rem',
+        maxWidth: '48rem',
+        margin: '0 auto',
+        border: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+        boxShadow: darkMode 
+          ? '0 25px 50px rgba(0, 0, 0, 0.3)' 
+          : '0 25px 50px rgba(0, 0, 0, 0.1)'
+      }}>
+        <h2 style={{
+          fontSize: '2rem',
+          fontWeight: '700',
+          marginBottom: '1rem'
+        }}>
           Treasury Investment Policy
         </h2>
-        <p className="text-xl text-slate-600 dark:text-slate-400">
-          Institutional governance and risk management framework
+        <p style={{
+          fontSize: '1.125rem',
+          color: darkMode ? '#94a3b8' : '#64748b',
+          marginBottom: '2rem'
+        }}>
+          Current Policy Version 2.1 - Target allocation: 25% of corporate cash in Bitcoin
         </p>
-      </div>
-      
-      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Current Policy (Version 2.1)</h3>
-          <div className="flex space-x-3">
-            <button className="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-medium">
-              View History
-            </button>
-            <button className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-medium">
-              Modify Policy
-            </button>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '1rem',
+          textAlign: 'left'
+        }}>
+          <div style={{ padding: '1rem', background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)', borderRadius: '1rem' }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🎯</div>
+            <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: '600' }}>Target Allocation</h4>
+            <p style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700' }}>25%</p>
+          </div>
+          <div style={{ padding: '1rem', background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)', borderRadius: '1rem' }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📅</div>
+            <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: '600' }}>Rebalance</h4>
+            <p style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700' }}>Monthly</p>
+          </div>
+          <div style={{ padding: '1rem', background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)', borderRadius: '1rem' }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>✋</div>
+            <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: '600' }}>Approval</h4>
+            <p style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700' }}>2 of 3</p>
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <PolicyItem label="Target Allocation" value="25%" description="of corporate cash reserves" icon="🎯" />
-          <PolicyItem label="Sweep Cadence" value="Monthly" description="automated rebalancing" icon="📅" />
-          <PolicyItem label="Allocation Bands" value="15% - 35%" description="min/max boundaries" icon="📊" />
-          <PolicyItem label="Approval Quorum" value="2 of 3" description="required signers" icon="✋" />
-          <PolicyItem label="Max Single Trade" value="$5M" description="per transaction limit" icon="💰" />
-          <PolicyItem label="Emergency Override" value="CFO + CEO" description="bypass mechanism" icon="🚨" />
-        </div>
       </div>
     </div>
   )
 }
 
-function PolicyItem({ label, value, description, icon }) {
+function Trade({ darkMode }) {
   return (
-    <div className="bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl p-6 hover:bg-slate-100/50 dark:hover:bg-slate-700/30 transition-all duration-200">
-      <div className="flex items-center space-x-3 mb-3">
-        <span className="text-2xl">{icon}</span>
-        <h4 className="font-bold text-slate-900 dark:text-white">{label}</h4>
-      </div>
-      <p className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{value}</p>
-      <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>
-    </div>
-  )
-}
-
-function Trade() {
-  return (
-    <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 dark:from-white dark:to-blue-200 bg-clip-text text-transparent mb-4">
+    <div style={{ maxWidth: '72rem', margin: '0 auto' }}>
+      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+        <h2 style={{
+          fontSize: '2.5rem',
+          fontWeight: '800',
+          background: darkMode 
+            ? 'linear-gradient(135deg, #ffffff 0%, #60a5fa 100%)'
+            : 'linear-gradient(135deg, #1e293b 0%, #3b82f6 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          marginBottom: '1rem'
+        }}>
           Professional Trading Desk
         </h2>
-        <p className="text-xl text-slate-600 dark:text-slate-400">
+        <p style={{
+          fontSize: '1.25rem',
+          color: darkMode ? '#94a3b8' : '#64748b'
+        }}>
           Institutional-grade Bitcoin execution platform
         </p>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">Execute New Trade</h3>
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <button className="py-4 px-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl font-bold text-lg hover:scale-105 transition-transform duration-200 shadow-lg">
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+        gap: '2rem'
+      }}>
+        <div style={{
+          background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '2rem',
+          padding: '2rem',
+          border: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+          boxShadow: darkMode 
+            ? '0 25px 50px rgba(0, 0, 0, 0.3)' 
+            : '0 25px 50px rgba(0, 0, 0, 0.1)'
+        }}>
+          <h3 style={{
+            fontSize: '1.5rem',
+            fontWeight: '700',
+            marginBottom: '2rem'
+          }}>
+            Execute New Trade
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <button style={{
+                padding: '1rem',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '1rem',
+                fontWeight: '700',
+                fontSize: '1.125rem',
+                cursor: 'pointer',
+                boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3)'
+              }}>
                 🔥 Buy Bitcoin
               </button>
-              <button className="py-4 px-6 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl font-bold text-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors duration-200">
+              <button style={{
+                padding: '1rem',
+                background: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                color: darkMode ? '#94a3b8' : '#64748b',
+                border: 'none',
+                borderRadius: '1rem',
+                fontWeight: '700',
+                fontSize: '1.125rem',
+                cursor: 'pointer'
+              }}>
                 📉 Sell Bitcoin
               </button>
             </div>
             
-            <div className="space-y-4">
-              <input 
-                type="text" 
-                placeholder="Trade Amount (USD)"
-                className="w-full p-4 border-2 border-slate-200 dark:border-slate-700 rounded-2xl bg-white/50 dark:bg-slate-800/50 text-slate-900 dark:text-white text-lg font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 transition-all duration-200"
-              />
-              
-              <div className="bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-slate-600 dark:text-slate-400">Current BTC Price</span>
-                  <span className="text-xl font-bold text-slate-900 dark:text-white">$43,250.00</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-400">Est. Bitcoin Amount</span>
-                  <span className="text-lg font-medium text-slate-700 dark:text-slate-300">-- BTC</span>
-                </div>
-              </div>
-              
-              <button className="w-full py-4 px-6 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-2xl font-bold text-lg hover:scale-105 transition-transform duration-200 shadow-lg">
-                ⚡ Get Real-Time Quote
-              </button>
-            </div>
+            <input 
+              type="text" 
+              placeholder="Trade Amount (USD)"
+              style={{
+                width: '100%',
+                padding: '1rem',
+                border: `2px solid ${darkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
+                borderRadius: '1rem',
+                background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+                color: darkMode ? 'white' : '#1e293b',
+                fontSize: '1.125rem',
+                fontWeight: '500',
+                fontFamily: 'inherit'
+              }}
+            />
+            
+            <button style={{
+              width: '100%',
+              padding: '1rem',
+              background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '1rem',
+              fontWeight: '700',
+              fontSize: '1.125rem',
+              cursor: 'pointer',
+              boxShadow: '0 10px 25px rgba(255, 107, 53, 0.3)'
+            }}>
+              ⚡ Get Real-Time Quote
+            </button>
           </div>
         </div>
         
-        <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">Live Market Data</h3>
-          <div className="space-y-6">
-            <div className="text-center py-6">
-              <div className="text-5xl font-bold text-slate-900 dark:text-white mb-2">$43,250</div>
-              <div className="flex items-center justify-center space-x-2">
-                <span className="text-green-500 text-lg font-medium">↗ +2.1%</span>
-                <span className="text-slate-500 dark:text-slate-400">24h</span>
-              </div>
+        <div style={{
+          background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '2rem',
+          padding: '2rem',
+          border: `1px solid ${darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+          boxShadow: darkMode 
+            ? '0 25px 50px rgba(0, 0, 0, 0.3)' 
+            : '0 25px 50px rgba(0, 0, 0, 0.1)'
+        }}>
+          <h3 style={{
+            fontSize: '1.5rem',
+            fontWeight: '700',
+            marginBottom: '2rem'
+          }}>
+            Live Market Data
+          </h3>
+          
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{
+              fontSize: '3rem',
+              fontWeight: '700',
+              marginBottom: '0.5rem'
+            }}>
+              $43,250
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl p-4 text-center">
-                <div className="text-2xl font-bold text-slate-900 dark:text-white">$28.5B</div>
-                <div className="text-sm text-slate-500 dark:text-slate-400">24h Volume</div>
-              </div>
-              <div className="bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl p-4 text-center">
-                <div className="text-2xl font-bold text-slate-900 dark:text-white">$845B</div>
-                <div className="text-sm text-slate-500 dark:text-slate-400">Market Cap</div>
-              </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}>
+              <span style={{ color: '#10b981', fontSize: '1.125rem', fontWeight: '600' }}>↗ +2.1%</span>
+              <span style={{ color: darkMode ? '#94a3b8' : '#64748b' }}>24h</span>
             </div>
-            
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-600 dark:text-slate-400">24h High</span>
-                <span className="font-bold text-slate-900 dark:text-white">$43,890</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-600 dark:text-slate-400">24h Low</span>
-                <span className="font-bold text-slate-900 dark:text-white">$42,150</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-600 dark:text-slate-400">Fear & Greed Index</span>
-                <span className="font-bold text-orange-500">72 (Greed)</span>
-              </div>
+          </div>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '1rem',
+            marginBottom: '1.5rem'
+          }}>
+            <div style={{
+              background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+              borderRadius: '1rem',
+              padding: '1rem',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>$28.5B</div>
+              <div style={{ fontSize: '0.875rem', color: darkMode ? '#94a3b8' : '#64748b' }}>24h Volume</div>
+            </div>
+            <div style={{
+              background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+              borderRadius: '1rem',
+              padding: '1rem',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>$845B</div>
+              <div style={{ fontSize: '0.875rem', color: darkMode ? '#94a3b8' : '#64748b' }}>Market Cap</div>
             </div>
           </div>
         </div>
@@ -560,274 +1056,127 @@ function Trade() {
   )
 }
 
-function Custody() {
+// Other simplified components
+function Custody({ darkMode }) {
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 dark:from-white dark:to-blue-200 bg-clip-text text-transparent mb-4">
-          Digital Asset Custody
-        </h2>
-        <p className="text-xl text-slate-600 dark:text-slate-400">
+    <div style={{ textAlign: 'center', padding: '2rem' }}>
+      <h2 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '2rem' }}>Digital Asset Custody</h2>
+      <div style={{
+        background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+        borderRadius: '2rem',
+        padding: '2rem',
+        maxWidth: '48rem',
+        margin: '0 auto'
+      }}>
+        <p style={{ fontSize: '1.125rem', marginBottom: '2rem' }}>
           Bank-grade security with institutional insurance coverage
         </p>
-      </div>
-      
-      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
-        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">Multi-Signature Wallet Infrastructure</h3>
-        <div className="space-y-6">
-          <WalletRow 
-            name="Primary Cold Storage Vault" 
-            balance="1,150.25 BTC" 
-            tier="Cold" 
-            insured="$45,000,000"
-            status="Secure"
-            signers="3/5"
-          />
-          <WalletRow 
-            name="Operational Treasury Wallet" 
-            balance="84.33 BTC" 
-            tier="Warm" 
-            insured="$3,200,000"
-            status="Active"
-            signers="2/3"
-          />
-          <WalletRow 
-            name="Emergency Backup Reserve" 
-            balance="0.00 BTC" 
-            tier="Cold" 
-            insured="$10,000,000"
-            status="Standby"
-            signers="4/7"
-          />
-        </div>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🔒</div>
+        <p style={{ fontSize: '1.25rem', fontWeight: '600' }}>
+          Multi-signature wallets with hardware security modules
+        </p>
       </div>
     </div>
   )
 }
 
-function WalletRow({ name, balance, tier, insured, status, signers }) {
-  const tierColors = {
-    Cold: 'from-blue-500 to-indigo-500',
-    Warm: 'from-yellow-500 to-orange-500',
-    Hot: 'from-red-500 to-pink-500'
-  }
-  
-  const statusColors = {
-    Secure: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    Active: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    Standby: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400'
-  }
-
+function Reporting({ darkMode }) {
   return (
-    <div className="flex items-center justify-between p-6 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl hover:bg-slate-100/50 dark:hover:bg-slate-700/30 transition-all duration-200">
-      <div className="flex items-center space-x-4">
-        <div className={`w-16 h-16 bg-gradient-to-r ${tierColors[tier]} rounded-2xl flex items-center justify-center text-white shadow-lg`}>
-          <span className="text-2xl">🔒</span>
-        </div>
-        <div>
-          <h4 className="text-xl font-bold text-slate-900 dark:text-white">{name}</h4>
-          <p className="text-lg text-slate-600 dark:text-slate-400 font-medium">{balance}</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Signers: {signers}</p>
-        </div>
-      </div>
-      <div className="text-right space-y-2">
-        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColors[status]}`}>
-          {status}
-        </div>
-        <div className={`px-3 py-1 bg-gradient-to-r ${tierColors[tier]} text-white rounded-lg text-sm font-medium`}>
-          {tier} Storage
-        </div>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Insured: {insured}</p>
-      </div>
-    </div>
-  )
-}
-
-function Reporting() {
-  return (
-    <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 dark:from-white dark:to-blue-200 bg-clip-text text-transparent mb-4">
-          Executive Reporting Suite
-        </h2>
-        <p className="text-xl text-slate-600 dark:text-slate-400">
+    <div style={{ textAlign: 'center', padding: '2rem' }}>
+      <h2 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '2rem' }}>Executive Reporting Suite</h2>
+      <div style={{
+        background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+        borderRadius: '2rem',
+        padding: '2rem',
+        maxWidth: '48rem',
+        margin: '0 auto'
+      }}>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📊</div>
+        <p style={{ fontSize: '1.125rem', marginBottom: '2rem' }}>
           Board-ready analytics and compliance documentation
         </p>
-      </div>
-      
-      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
-        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">Generate Monthly CFO Pack</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <ReportOption title="Treasury Allocation Summary" description="Portfolio composition and allocation metrics" checked={true} />
-            <ReportOption title="Performance vs Benchmarks" description="Comparative analysis against indices" checked={true} />
-            <ReportOption title="Risk Analytics Dashboard" description="Volatility, VaR, and stress testing" checked={true} />
-            <ReportOption title="Compliance & Audit Trail" description="Regulatory compliance documentation" checked={false} />
-            <ReportOption title="Board-Ready Presentations" description="Executive summary slides" checked={false} />
-          </div>
-          <div className="space-y-6">
-            <button className="w-full py-4 px-6 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-2xl font-bold text-lg hover:scale-105 transition-transform duration-200 shadow-lg">
-              📊 Generate PDF Report
-            </button>
-            <button className="w-full py-4 px-6 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-2xl font-bold text-lg hover:scale-105 transition-transform duration-200 shadow-lg">
-              📈 Export to Excel
-            </button>
-            <div className="bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl p-4">
-              <h4 className="font-bold text-slate-900 dark:text-white mb-2">Quick Export Options</h4>
-              <div className="space-y-2">
-                <button className="w-full text-left p-3 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-                  📋 NetSuite Journal Entries
-                </button>
-                <button className="w-full text-left p-3 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-                  💼 QuickBooks Integration
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <button style={{
+          padding: '1rem 2rem',
+          background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '1rem',
+          fontWeight: '700',
+          fontSize: '1.125rem',
+          cursor: 'pointer'
+        }}>
+          Generate CFO Report
+        </button>
       </div>
     </div>
   )
 }
 
-function ReportOption({ title, description, checked }) {
+function Compliance({ darkMode }) {
   return (
-    <label className="flex items-start space-x-3 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl hover:bg-slate-100/50 dark:hover:bg-slate-700/30 transition-all duration-200 cursor-pointer">
-      <input 
-        type="checkbox" 
-        className="mt-1 w-5 h-5 text-orange-500 rounded border-2 border-slate-300 dark:border-slate-600 focus:ring-orange-500" 
-        defaultChecked={checked} 
-      />
-      <div>
-        <h4 className="font-bold text-slate-900 dark:text-white">{title}</h4>
-        <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
-      </div>
-    </label>
-  )
-}
-
-function Compliance() {
-  return (
-    <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 dark:from-white dark:to-blue-200 bg-clip-text text-transparent mb-4">
-          Regulatory Compliance
-        </h2>
-        <p className="text-xl text-slate-600 dark:text-slate-400">
+    <div style={{ textAlign: 'center', padding: '2rem' }}>
+      <h2 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '2rem' }}>Regulatory Compliance</h2>
+      <div style={{
+        background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+        borderRadius: '2rem',
+        padding: '2rem',
+        maxWidth: '48rem',
+        margin: '0 auto'
+      }}>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
+        <p style={{ fontSize: '1.125rem', marginBottom: '2rem' }}>
           Automated compliance monitoring and audit trail management
         </p>
-      </div>
-      
-      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
-        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">Compliance Dashboard</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ComplianceItem item="GAAP Fair Value Measurement" status="Current" description="ASC 820 compliant valuation" />
-          <ComplianceItem item="IFRS Digital Asset Reporting" status="Current" description="IAS 38 intangible asset treatment" />
-          <ComplianceItem item="SOX Internal Controls" status="Review" description="Section 404 control documentation" />
-          <ComplianceItem item="SEC Digital Asset Guidance" status="Current" description="Staff accounting bulletins compliance" />
-          <ComplianceItem item="AML/KYC Documentation" status="Current" description="Customer due diligence records" />
-          <ComplianceItem item="Audit Trail Integrity" status="Current" description="Immutable transaction logging" />
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '1rem'
+        }}>
+          <div style={{ padding: '1rem', background: darkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)', borderRadius: '1rem' }}>
+            <div style={{ color: '#10b981', fontWeight: '600' }}>GAAP Compliant</div>
+          </div>
+          <div style={{ padding: '1rem', background: darkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)', borderRadius: '1rem' }}>
+            <div style={{ color: '#10b981', fontWeight: '600' }}>SOX Controls</div>
+          </div>
+          <div style={{ padding: '1rem', background: darkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)', borderRadius: '1rem' }}>
+            <div style={{ color: '#10b981', fontWeight: '600' }}>Audit Ready</div>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-function ComplianceItem({ item, status, description }) {
-  const statusConfig = {
-    Current: { color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: '✅' },
-    Review: { color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400', icon: '⚠️' },
-    Expired: { color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: '❌' }
-  }
-
+function Admin({ darkMode }) {
   return (
-    <div className="p-6 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl hover:bg-slate-100/50 dark:hover:bg-slate-700/30 transition-all duration-200">
-      <div className="flex items-start justify-between mb-3">
-        <h4 className="font-bold text-slate-900 dark:text-white">{item}</h4>
-        <div className={`flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium ${statusConfig[status].color}`}>
-          <span>{statusConfig[status].icon}</span>
-          <span>{status}</span>
-        </div>
-      </div>
-      <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
-    </div>
-  )
-}
-
-function Admin() {
-  return (
-    <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 dark:from-white dark:to-blue-200 bg-clip-text text-transparent mb-4">
-          System Administration
-        </h2>
-        <p className="text-xl text-slate-600 dark:text-slate-400">
+    <div style={{ textAlign: 'center', padding: '2rem' }}>
+      <h2 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '2rem' }}>System Administration</h2>
+      <div style={{
+        background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+        borderRadius: '2rem',
+        padding: '2rem',
+        maxWidth: '48rem',
+        margin: '0 auto'
+      }}>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>⚙️</div>
+        <p style={{ fontSize: '1.125rem', marginBottom: '2rem' }}>
           Enterprise user management and system configuration
         </p>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">User Management</h3>
-          <div className="space-y-4">
-            <AdminUserRow name="John Smith" role="Chief Financial Officer" email="john.smith@company.com" status="Active" />
-            <AdminUserRow name="Sarah Johnson" role="Corporate Treasurer" email="sarah.johnson@company.com" status="Active" />
-            <AdminUserRow name="Mike Chen" role="Financial Analyst" email="mike.chen@company.com" status="Inactive" />
-            <AdminUserRow name="Lisa Wang" role="Risk Manager" email="lisa.wang@company.com" status="Active" />
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+          gap: '1rem'
+        }}>
+          <div style={{ padding: '1rem', background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)', borderRadius: '1rem' }}>
+            <div style={{ fontWeight: '600' }}>5 Active Users</div>
+          </div>
+          <div style={{ padding: '1rem', background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)', borderRadius: '1rem' }}>
+            <div style={{ fontWeight: '600' }}>SSO Enabled</div>
+          </div>
+          <div style={{ padding: '1rem', background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)', borderRadius: '1rem' }}>
+            <div style={{ fontWeight: '600' }}>Audit Logs</div>
           </div>
         </div>
-        
-        <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">System Configuration</h3>
-          <div className="space-y-6">
-            <SystemSetting title="API Rate Limiting" value="1000 req/min" status="Enabled" />
-            <SystemSetting title="Audit Logging" value="All actions" status="Enabled" />
-            <SystemSetting title="Two-Factor Authentication" value="Required" status="Enabled" />
-            <SystemSetting title="Session Timeout" value="30 minutes" status="Configured" />
-            <SystemSetting title="SSO Integration" value="SAML 2.0" status="Pending" />
-            <SystemSetting title="Data Encryption" value="AES-256" status="Enabled" />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function AdminUserRow({ name, role, email, status }) {
-  return (
-    <div className="flex items-center justify-between p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl hover:bg-slate-100/50 dark:hover:bg-slate-700/30 transition-all duration-200">
-      <div className="flex items-center space-x-4">
-        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold shadow-lg">
-          {name.split(' ').map(n => n[0]).join('')}
-        </div>
-        <div>
-          <p className="font-bold text-slate-900 dark:text-white">{name}</p>
-          <p className="text-sm text-slate-600 dark:text-slate-400">{role}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-500">{email}</p>
-        </div>
-      </div>
-      <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-        status === 'Active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-900/30 dark:text-slate-400'
-      }`}>
-        {status}
-      </div>
-    </div>
-  )
-}
-
-function SystemSetting({ title, value, status }) {
-  return (
-    <div className="flex items-center justify-between p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl">
-      <div>
-        <p className="font-bold text-slate-900 dark:text-white">{title}</p>
-        <p className="text-sm text-slate-600 dark:text-slate-400">{value}</p>
-      </div>
-      <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-        status === 'Enabled' || status === 'Configured' 
-          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-      }`}>
-        {status}
       </div>
     </div>
   )
