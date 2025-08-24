@@ -556,7 +556,7 @@ export default function ForesightEnterprise() {
             width: `${4 + Math.random() * 8}px`,
             height: `${4 + Math.random() * 8}px`,
             borderRadius: '50%',
-            background: `rgba(6, 182, 212, ${0.3 + Math.random() * 0.4})`,
+            background: `rgba(6, 182, 212, 0.1) ${0.3 + Math.random() * 0.4})`,
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
             animation: `float ${8 + Math.random() * 12}s linear infinite`,
@@ -2483,4 +2483,4 @@ export default function ForesightEnterprise() {
                   background: 'rgba(6, 182, 212, 0.08)',
                   borderRadius: '16px',
                   padding: '24px',
-                  marginBottom: '24px
+                  marginBottom: '24px'
