@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
 
-
 export default function ForesightEnterprise() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [marketData, setMarketData] = useState(null)
@@ -49,7 +48,6 @@ export default function ForesightEnterprise() {
     }
   })
 
-
   const [coldStorage, setColdStorage] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('foresight-cold-storage')
@@ -74,14 +72,12 @@ export default function ForesightEnterprise() {
     }
   })
 
-
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('foresight-portfolio', JSON.stringify(portfolio))
       localStorage.setItem('foresight-cold-storage', JSON.stringify(coldStorage))
     }
   }, [portfolio, coldStorage])
-
 
   useEffect(() => {
     const fetchMarketData = async () => {
@@ -109,12 +105,10 @@ export default function ForesightEnterprise() {
       }
     }
 
-
     fetchMarketData()
     const interval = setInterval(fetchMarketData, 30000)
     return () => clearInterval(interval)
   }, [])
-
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -125,11 +119,9 @@ export default function ForesightEnterprise() {
     }).format(amount)
   }
 
-
   const formatBTC = (amount) => {
     return amount.toFixed(6) + ' BTC'
   }
-
 
   const calculateStockValue = () => {
     return Object.keys(portfolio.stocks).reduce((total, symbol) => {
@@ -138,7 +130,6 @@ export default function ForesightEnterprise() {
       return total + (stock.shares * price)
     }, 0)
   }
-
 
   const updateUnrealizedPL = () => {
     if (!marketData) return
@@ -156,11 +147,9 @@ export default function ForesightEnterprise() {
     }))
   }
 
-
   useEffect(() => {
     updateUnrealizedPL()
   }, [marketData, stockData])
-
 
   const executeTrade = async (side, amount, asset = 'BTC') => {
     if (!marketData && asset === 'BTC') return
@@ -168,10 +157,8 @@ export default function ForesightEnterprise() {
     const price = asset === 'BTC' ? marketData.usd : stockData[asset]?.usd
     if (!price) return
 
-
     const fee = amount * 0.005
     const netAmount = amount - fee
-
 
     if (side === 'BUY') {
       if (portfolio.cashUSD < amount) {
@@ -179,9 +166,7 @@ export default function ForesightEnterprise() {
         return
       }
 
-
       let assetAmount, newPortfolio
-
 
       if (asset === 'BTC') {
         assetAmount = netAmount / price
@@ -204,7 +189,6 @@ export default function ForesightEnterprise() {
             storage: 'hot'
           }]
         }
-
 
         setPendingBtcTrade({
           amount: assetAmount,
@@ -241,7 +225,6 @@ export default function ForesightEnterprise() {
         setPortfolio(newPortfolio)
       }
 
-
     } else {
       if (asset === 'BTC') {
         const availableBTC = portfolio.btcHoldingsHot
@@ -255,7 +238,6 @@ export default function ForesightEnterprise() {
           }
           return
         }
-
 
         const newPortfolio = {
           ...portfolio,
@@ -286,7 +268,6 @@ export default function ForesightEnterprise() {
           return
         }
 
-
         const newPortfolio = {
           ...portfolio,
           cashUSD: portfolio.cashUSD + netAmount,
@@ -313,14 +294,10 @@ export default function ForesightEnterprise() {
       }
     }
 
-
     updateUnrealizedPL()
   }
-
-
   const handleCustodyDecision = (moveToCold) => {
     if (!pendingBtcTrade) return
-
 
     if (moveToCold) {
       const newPortfolio = {
@@ -350,7 +327,6 @@ export default function ForesightEnterprise() {
     setPendingBtcTrade(null)
   }
 
-
   const startMultisigTransfer = (amount) => {
     if (coldStorage.totalBTC < amount) {
       alert('Insufficient BTC in cold storage!')
@@ -373,7 +349,6 @@ export default function ForesightEnterprise() {
       }
     })
   }
-
 
   const processMultisigSignature = () => {
     const signers = [...coldStorage.multisigConfig.signers]
@@ -399,7 +374,6 @@ export default function ForesightEnterprise() {
       }
     }
   }
-
 
   const completeMultisigTransfer = () => {
     if (!selectedTrade) return
@@ -430,7 +404,6 @@ export default function ForesightEnterprise() {
     setShowMultisigModal(false)
     setSelectedTrade(null)
   }
-
 
   const resetDemo = () => {
     const initialPortfolio = {
@@ -472,7 +445,6 @@ export default function ForesightEnterprise() {
     setShowUserMenu(false)
   }
 
-
   const generateReport = (type, format) => {
     const reportData = {
       generatedAt: new Date().toISOString(),
@@ -484,11 +456,9 @@ export default function ForesightEnterprise() {
     }
     
     if (format === 'pdf') {
-      // Simulate PDF download
       const fileName = `foresight-${type}-report-${new Date().toISOString().split('T')[0]}.pdf`
       alert(`Generating ${fileName}...\n\nThis would download a professional PDF report in a real implementation.`)
     } else if (format === 'csv') {
-      // Generate CSV
       const csvData = portfolio.trades.map(trade => ({
         Date: new Date(trade.timestamp).toLocaleDateString(),
         Asset: trade.asset,
@@ -515,13 +485,13 @@ export default function ForesightEnterprise() {
     }
   }
 
-
   const currentPrice = selectedAsset === 'BTC' ? marketData?.usd : stockData[selectedAsset]?.usd
   const estimatedAssetAmount = tradeAmount && currentPrice ? parseFloat(tradeAmount) / currentPrice : 0
   const maxBuyAmount = portfolio.cashUSD
   const maxSellAmount = selectedAsset === 'BTC' 
     ? portfolio.btcHoldingsHot * (currentPrice || 0)
     : (portfolio.stocks[selectedAsset]?.shares || 0) * (currentPrice || 0)
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -537,8 +507,6 @@ export default function ForesightEnterprise() {
         <meta name="description" content="Enterprise Bitcoin Treasury Management Platform" />
       </Head>
 
-
-      {/* Enhanced Animated Background */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -549,14 +517,13 @@ export default function ForesightEnterprise() {
         overflow: 'hidden',
         pointerEvents: 'none'
       }}>
-        {/* Floating Particles */}
         {[...Array(12)].map((_, i) => (
           <div key={i} style={{
             position: 'absolute',
             width: `${4 + Math.random() * 8}px`,
             height: `${4 + Math.random() * 8}px`,
             borderRadius: '50%',
-            background: `rgba(6, 182, 212, 0.1) ${0.3 + Math.random() * 0.4})`,
+            background: `rgba(6, 182, 212, ${0.3 + Math.random() * 0.4})`,
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
             animation: `float ${8 + Math.random() * 12}s linear infinite`,
@@ -564,7 +531,6 @@ export default function ForesightEnterprise() {
           }} />
         ))}
         
-        {/* Gradient Orbs */}
         {[...Array(8)].map((_, i) => (
           <div key={`orb-${i}`} style={{
             position: 'absolute',
@@ -579,8 +545,6 @@ export default function ForesightEnterprise() {
           }} />
         ))}
 
-
-        {/* Network Lines */}
         <svg style={{
           position: 'absolute',
           top: 0,
@@ -606,10 +570,7 @@ export default function ForesightEnterprise() {
         </svg>
       </div>
 
-
-      {/* Main Container */}
       <div style={{ position: 'relative', zIndex: 2 }}>
-        {/* Enhanced Header */}
         <header style={{
           background: 'rgba(15, 22, 41, 0.95)',
           backdropFilter: 'blur(20px)',
@@ -627,7 +588,6 @@ export default function ForesightEnterprise() {
             maxWidth: '1600px',
             margin: '0 auto'
           }}>
-            {/* Enhanced Logo */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
               <div style={{
                 width: '56px',
@@ -674,8 +634,6 @@ export default function ForesightEnterprise() {
               </div>
             </div>
 
-
-            {/* Enhanced Navigation */}
             <nav style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(6, 182, 212, 0.05)', borderRadius: '16px', padding: '8px' }}>
               {[
                 { id: 'dashboard', label: 'Dashboard', icon: '📊' },
@@ -724,8 +682,6 @@ export default function ForesightEnterprise() {
               ))}
             </nav>
 
-
-            {/* Enhanced User Menu */}
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -756,7 +712,6 @@ export default function ForesightEnterprise() {
               >
                 TC
               </button>
-
 
               {showUserMenu && (
                 <div style={{
@@ -861,16 +816,12 @@ export default function ForesightEnterprise() {
             </div>
           </div>
         </header>
-
-
-        {/* Enhanced Main Content */}
         <main style={{ 
           padding: '40px', 
           maxWidth: '1600px', 
           margin: '0 auto',
           minHeight: 'calc(100vh - 100px)'
         }}>
-          {/* Dashboard Tab with Enhanced Styling */}
           {activeTab === 'dashboard' && (
             <div style={{ 
               display: 'flex', 
@@ -878,9 +829,8 @@ export default function ForesightEnterprise() {
               gap: '40px',
               animation: 'slideUp 0.6s ease-out'
             }}>
-              {/* Hero Section */}
               <div style={{
-                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(8, 145, 178, 0.05) 50%, rgba(6, 182, 212, 0.1) 100%)',
+                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(8, 145, 178, 0.05) 100%)',
                 borderRadius: '28px',
                 padding: '60px',
                 border: '1px solid rgba(6, 182, 212, 0.2)',
@@ -889,7 +839,6 @@ export default function ForesightEnterprise() {
                 position: 'relative',
                 overflow: 'hidden'
               }}>
-                {/* Subtle animated background pattern */}
                 <div style={{
                   position: 'absolute',
                   top: 0,
@@ -906,6 +855,7 @@ export default function ForesightEnterprise() {
                     fontWeight: '800', 
                     color: '#e2e8f0', 
                     marginBottom: '12px',
+                    textAlign: 'center',
                     background: 'linear-gradient(135deg, #e2e8f0 0%, #06b6d4 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
@@ -918,13 +868,14 @@ export default function ForesightEnterprise() {
                     marginBottom: '40px', 
                     fontSize: '20px',
                     fontWeight: '400',
-                    lineHeight: '1.6'
+                    lineHeight: '1.6',
+                    textAlign: 'center',
+                    maxWidth: '600px',
+                    margin: '0 auto 40px auto'
                   }}>
                     Real-time portfolio overview and institutional-grade Bitcoin treasury management
                   </p>
 
-
-                  {/* Enhanced Market Data Bar */}
                   {marketData && (
                     <div style={{
                       background: 'rgba(6, 182, 212, 0.08)',
@@ -986,8 +937,6 @@ export default function ForesightEnterprise() {
                     </div>
                   )}
 
-
-                  {/* Enhanced Portfolio KPIs */}
                   <div style={{ 
                     display: 'grid', 
                     gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
@@ -1065,7 +1014,6 @@ export default function ForesightEnterprise() {
                       </div>
                     </div>
 
-
                     <div style={{
                       background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.15) 0%, rgba(251, 113, 133, 0.1) 100%)',
                       borderRadius: '24px',
@@ -1098,11 +1046,10 @@ export default function ForesightEnterprise() {
                       }}>
                         {formatBTC(portfolio.btcHoldings)}
                       </div>
-                      <div style={{ fontSize: '15px', color: '#64748b' }}>
+                      <div style={{ fontSize: '15px', color: '#94a3b8' }}>
                         🔥 Hot: {formatBTC(portfolio.btcHoldingsHot)} | ❄️ Cold: {formatBTC(portfolio.btcHoldingsCold)}
                       </div>
                     </div>
-
 
                     <div style={{
                       background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%)',
@@ -1136,7 +1083,7 @@ export default function ForesightEnterprise() {
                       }}>
                         {portfolio.unrealizedPL >= 0 ? '+' : ''}{formatCurrency(portfolio.unrealizedPL)}
                       </div>
-                      <div style={{ fontSize: '15px', color: '#64748b' }}>
+                      <div style={{ fontSize: '15px', color: '#94a3b8' }}>
                         Cost Basis: {formatCurrency(portfolio.costBasis)}
                       </div>
                     </div>
@@ -1144,8 +1091,6 @@ export default function ForesightEnterprise() {
                 </div>
               </div>
 
-
-              {/* Enhanced Recent Trades */}
               {portfolio.trades.length > 0 && (
                 <div style={{
                   background: 'rgba(6, 182, 212, 0.05)',
@@ -1222,7 +1167,6 @@ export default function ForesightEnterprise() {
               )}
             </div>
           )}
-          {/* Enhanced Trading Tab */}
           {activeTab === 'trade' && (
             <div style={{ 
               display: 'flex', 
@@ -1236,420 +1180,306 @@ export default function ForesightEnterprise() {
                 padding: '60px',
                 border: '1px solid rgba(6, 182, 212, 0.2)',
                 boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3)',
-                backdropFilter: 'blur(20px)',
-                position: 'relative',
-                overflow: 'hidden'
+                backdropFilter: 'blur(20px)'
               }}>
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2306B6D4' fill-opacity='0.02'%3E%3Cpath d='M20 20c0-11.046-8.954-20-20-20v20h20z'/%3E%3C/g%3E%3C/svg%3E")`,
-                  animation: 'backgroundMove 15s linear infinite'
-                }} />
+                <h2 style={{ 
+                  color: '#e2e8f0', 
+                  marginBottom: '40px', 
+                  fontSize: '32px', 
+                  fontWeight: '700',
+                  textAlign: 'center'
+                }}>
+                  Execute Trade
+                </h2>
 
-
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                  <h1 style={{ 
-                    fontSize: '42px', 
-                    fontWeight: '800', 
-                    color: '#e2e8f0', 
-                    marginBottom: '16px',
-                    textAlign: 'center',
-                    background: 'linear-gradient(135deg, #e2e8f0 0%, #06b6d4 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text'
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+                  gap: '40px' 
+                }}>
+                  <div style={{
+                    background: 'rgba(6, 182, 212, 0.08)',
+                    borderRadius: '24px',
+                    padding: '40px',
+                    border: '1px solid rgba(6, 182, 212, 0.15)',
+                    backdropFilter: 'blur(10px)'
                   }}>
-                    Advanced Trading Interface
-                  </h1>
-                  <p style={{ 
-                    color: '#94a3b8', 
-                    marginBottom: '50px', 
-                    fontSize: '18px',
-                    textAlign: 'center',
-                    maxWidth: '600px',
-                    margin: '0 auto 50px auto'
-                  }}>
-                    Execute Bitcoin and leveraged equity trades with institutional-grade precision
-                  </p>
-
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', alignItems: 'start' }}>
-                    {/* Enhanced Asset Selection */}
-                    <div style={{
-                      background: 'rgba(6, 182, 212, 0.05)',
-                      borderRadius: '24px',
-                      padding: '40px',
-                      border: '1px solid rgba(6, 182, 212, 0.1)'
-                    }}>
-                      <h3 style={{ color: '#e2e8f0', marginBottom: '24px', fontSize: '24px', fontWeight: '700' }}>
+                    <h3 style={{ color: '#e2e8f0', marginBottom: '24px', fontSize: '20px', fontWeight: '600' }}>
+                      Asset Selection
+                    </h3>
+                    <div style={{ marginBottom: '24px' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        color: '#94a3b8', 
+                        marginBottom: '8px', 
+                        fontSize: '14px',
+                        fontWeight: '500'
+                      }}>
                         Select Asset
-                      </h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <button
-                          onClick={() => setSelectedAsset('BTC')}
-                          style={{
-                            padding: '20px',
-                            background: selectedAsset === 'BTC' 
-                              ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' 
-                              : 'rgba(6, 182, 212, 0.08)',
-                            border: `2px solid ${selectedAsset === 'BTC' ? '#06b6d4' : 'rgba(6, 182, 212, 0.2)'}`,
-                            borderRadius: '16px',
-                            color: selectedAsset === 'BTC' ? 'white' : '#e2e8f0',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            fontSize: '16px',
-                            transition: 'all 0.3s ease',
-                            position: 'relative',
-                            overflow: 'hidden'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (selectedAsset !== 'BTC') {
-                              e.target.style.borderColor = 'rgba(6, 182, 212, 0.4)'
-                              e.target.style.background = 'rgba(6, 182, 212, 0.12)'
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (selectedAsset !== 'BTC') {
-                              e.target.style.borderColor = 'rgba(6, 182, 212, 0.2)'
-                              e.target.style.background = 'rgba(6, 182, 212, 0.08)'
-                            }
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <span style={{ fontSize: '24px' }}>₿</span>
-                              <span>Bitcoin (BTC)</span>
-                            </div>
-                            <span style={{ fontWeight: 'bold' }}>
-                              {loading ? 'Loading...' : formatCurrency(marketData?.usd || 0)}
-                            </span>
-                          </div>
-                        </button>
-                        
-                        {['MSTR', 'STRE', 'STRK', 'STRF', 'STRD'].map(symbol => (
-                          <button
-                            key={symbol}
-                            onClick={() => setSelectedAsset(symbol)}
-                            style={{
-                              padding: '20px',
-                              background: selectedAsset === symbol 
-                                ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' 
-                                : 'rgba(6, 182, 212, 0.08)',
-                              border: `2px solid ${selectedAsset === symbol ? '#06b6d4' : 'rgba(6, 182, 212, 0.2)'}`,
-                              borderRadius: '16px',
-                              color: selectedAsset === symbol ? 'white' : '#e2e8f0',
-                              cursor: 'pointer',
-                              fontWeight: '600',
-                              fontSize: '16px',
-                              transition: 'all 0.3s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (selectedAsset !== symbol) {
-                                e.target.style.borderColor = 'rgba(6, 182, 212, 0.4)'
-                                e.target.style.background = 'rgba(6, 182, 212, 0.12)'
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (selectedAsset !== symbol) {
-                                e.target.style.borderColor = 'rgba(6, 182, 212, 0.2)'
-                                e.target.style.background = 'rgba(6, 182, 212, 0.08)'
-                              }
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <span style={{ fontSize: '20px' }}>📈</span>
-                                <span>{symbol}</span>
-                              </div>
-                              <span style={{ fontWeight: 'bold' }}>
-                                {loading ? 'Loading...' : formatCurrency(stockData[symbol]?.usd || 0)}
-                              </span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
+                      </label>
+                      <select 
+                        value={tradeForm.asset} 
+                        onChange={(e) => setTradeForm({...tradeForm, asset: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '16px',
+                          borderRadius: '12px',
+                          border: '1px solid rgba(6, 182, 212, 0.3)',
+                          background: 'rgba(6, 182, 212, 0.05)',
+                          color: '#e2e8f0',
+                          fontSize: '16px',
+                          outline: 'none',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        <option value="BTC">Bitcoin (BTC)</option>
+                        <option value="MSTR">MicroStrategy (MSTR)</option>
+                        <option value="STRC">Strike (STRC)</option>
+                        <option value="STRK">Strike (STRK)</option>
+                        <option value="STRF">Strike (STRF)</option>
+                        <option value="STRD">Strike (STRD)</option>
+                      </select>
                     </div>
 
-
-                    {/* Enhanced Trade Form */}
-                    <div style={{
-                      background: 'rgba(6, 182, 212, 0.05)',
-                      borderRadius: '24px',
-                      padding: '40px',
-                      border: '1px solid rgba(6, 182, 212, 0.1)'
-                    }}>
-                      <h3 style={{ color: '#e2e8f0', marginBottom: '24px', fontSize: '24px', fontWeight: '700' }}>
-                        Execute Trade
-                      </h3>
-                      
-                      {/* Enhanced Buy/Sell Toggle */}
-                      <div style={{ 
-                        display: 'flex', 
-                        marginBottom: '32px', 
-                        background: 'rgba(6, 182, 212, 0.08)', 
-                        borderRadius: '16px', 
-                        padding: '6px',
-                        border: '1px solid rgba(6, 182, 212, 0.2)'
+                    <div style={{ marginBottom: '24px' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        color: '#94a3b8', 
+                        marginBottom: '8px', 
+                        fontSize: '14px',
+                        fontWeight: '500'
                       }}>
+                        Trade Type
+                      </label>
+                      <div style={{ display: 'flex', gap: '12px' }}>
                         <button
-                          onClick={() => setTradeSide('BUY')}
+                          onClick={() => setTradeForm({...tradeForm, side: 'BUY'})}
                           style={{
                             flex: 1,
                             padding: '16px',
-                            background: tradeSide === 'BUY' 
-                              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
-                              : 'transparent',
-                            border: 'none',
                             borderRadius: '12px',
-                            color: tradeSide === 'BUY' ? 'white' : '#94a3b8',
-                            fontWeight: '700',
+                            border: 'none',
+                            background: tradeForm.side === 'BUY' 
+                              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+                              : 'rgba(16, 185, 129, 0.1)',
+                            color: tradeForm.side === 'BUY' ? '#ffffff' : '#10b981',
                             fontSize: '16px',
+                            fontWeight: '600',
                             cursor: 'pointer',
                             transition: 'all 0.3s ease',
-                            boxShadow: tradeSide === 'BUY' ? '0 4px 15px rgba(16, 185, 129, 0.3)' : 'none'
+                            boxShadow: tradeForm.side === 'BUY' ? '0 8px 25px rgba(16, 185, 129, 0.3)' : 'none'
                           }}
                         >
                           BUY
                         </button>
                         <button
-                          onClick={() => setTradeSide('SELL')}
+                          onClick={() => setTradeForm({...tradeForm, side: 'SELL'})}
                           style={{
                             flex: 1,
                             padding: '16px',
-                            background: tradeSide === 'SELL' 
-                              ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
-                              : 'transparent',
-                            border: 'none',
                             borderRadius: '12px',
-                            color: tradeSide === 'SELL' ? 'white' : '#94a3b8',
-                            fontWeight: '700',
+                            border: 'none',
+                            background: tradeForm.side === 'SELL' 
+                              ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
+                              : 'rgba(239, 68, 68, 0.1)',
+                            color: tradeForm.side === 'SELL' ? '#ffffff' : '#ef4444',
                             fontSize: '16px',
+                            fontWeight: '600',
                             cursor: 'pointer',
                             transition: 'all 0.3s ease',
-                            boxShadow: tradeSide === 'SELL' ? '0 4px 15px rgba(239, 68, 68, 0.3)' : 'none'
+                            boxShadow: tradeForm.side === 'SELL' ? '0 8px 25px rgba(239, 68, 68, 0.3)' : 'none'
                           }}
                         >
                           SELL
                         </button>
                       </div>
+                    </div>
 
+                    <div style={{ marginBottom: '24px' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        color: '#94a3b8', 
+                        marginBottom: '8px', 
+                        fontSize: '14px',
+                        fontWeight: '500'
+                      }}>
+                        Amount ({tradeForm.asset === 'BTC' ? 'USD' : 'Shares'})
+                      </label>
+                      <input
+                        type="number"
+                        value={tradeForm.amount}
+                        onChange={(e) => setTradeForm({...tradeForm, amount: parseFloat(e.target.value) || 0})}
+                        placeholder={tradeForm.asset === 'BTC' ? '1000' : '100'}
+                        style={{
+                          width: '100%',
+                          padding: '16px',
+                          borderRadius: '12px',
+                          border: '1px solid rgba(6, 182, 212, 0.3)',
+                          background: 'rgba(6, 182, 212, 0.05)',
+                          color: '#e2e8f0',
+                          fontSize: '16px',
+                          outline: 'none',
+                          transition: 'all 0.3s ease'
+                        }}
+                      />
+                    </div>
 
-                      {/* Enhanced Amount Input */}
-                      <div style={{ marginBottom: '32px' }}>
-                        <label style={{ 
-                          display: 'block', 
-                          color: '#e2e8f0', 
-                          fontWeight: '600', 
+                    <button
+                      onClick={handleTradePreview}
+                      style={{
+                        width: '100%',
+                        padding: '18px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                        color: '#ffffff',
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 8px 25px rgba(6, 182, 212, 0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)'
+                        e.currentTarget.style.boxShadow = '0 12px 35px rgba(6, 182, 212, 0.4)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)'
+                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(6, 182, 212, 0.3)'
+                      }}
+                    >
+                      Preview Trade
+                    </button>
+                  </div>
+
+                  {tradePreview && (
+                    <div style={{
+                      background: 'rgba(6, 182, 212, 0.08)',
+                      borderRadius: '24px',
+                      padding: '40px',
+                      border: '1px solid rgba(6, 182, 212, 0.15)',
+                      backdropFilter: 'blur(10px)',
+                      animation: 'slideIn 0.5s ease-out'
+                    }}>
+                      <h3 style={{ color: '#e2e8f0', marginBottom: '24px', fontSize: '20px', fontWeight: '600' }}>
+                        Trade Preview
+                      </h3>
+                      <div style={{ marginBottom: '24px' }}>
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
                           marginBottom: '12px',
-                          fontSize: '16px'
+                          padding: '12px 0',
+                          borderBottom: '1px solid rgba(6, 182, 212, 0.1)'
                         }}>
-                          Amount (USD)
-                        </label>
-                        <div style={{ position: 'relative' }}>
-                          <input
-                            type="number"
-                            value={tradeAmount}
-                            onChange={(e) => setTradeAmount(e.target.value)}
-                            placeholder="Enter USD amount"
-                            style={{
-                              width: '100%',
-                              padding: '20px',
-                              paddingRight: '80px',
-                              border: '2px solid rgba(6, 182, 212, 0.2)',
-                              borderRadius: '16px',
-                              fontSize: '18px',
-                              background: 'rgba(6, 182, 212, 0.05)',
-                              color: '#e2e8f0',
-                              fontWeight: '600',
-                              transition: 'all 0.3s ease'
-                            }}
-                            onFocus={(e) => {
-                              e.target.style.borderColor = 'rgba(6, 182, 212, 0.5)'
-                              e.target.style.boxShadow = '0 0 20px rgba(6, 182, 212, 0.2)'
-                            }}
-                            onBlur={(e) => {
-                              e.target.style.borderColor = 'rgba(6, 182, 212, 0.2)'
-                              e.target.style.boxShadow = 'none'
-                            }}
-                          />
-                          <button
-                            onClick={() => setTradeAmount((tradeSide === 'BUY' ? maxBuyAmount : maxSellAmount).toString())}
-                            style={{
-                              position: 'absolute',
-                              right: '12px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-                              border: 'none',
-                              borderRadius: '10px',
-                              color: 'white',
-                              padding: '10px 16px',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              fontWeight: '700',
-                              transition: 'all 0.3s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.transform = 'translateY(-50%) scale(1.05)'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.transform = 'translateY(-50%) scale(1)'
-                            }}
-                          >
-                            MAX
-                          </button>
+                          <span style={{ color: '#94a3b8' }}>Asset:</span>
+                          <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{tradePreview.asset}</span>
                         </div>
-                        <div style={{ fontSize: '14px', color: '#64748b', marginTop: '8px' }}>
-                          Max {tradeSide.toLowerCase()}: {formatCurrency(tradeSide === 'BUY' ? maxBuyAmount : maxSellAmount)}
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          marginBottom: '12px',
+                          padding: '12px 0',
+                          borderBottom: '1px solid rgba(6, 182, 212, 0.1)'
+                        }}>
+                          <span style={{ color: '#94a3b8' }}>Side:</span>
+                          <span style={{ 
+                            color: tradePreview.side === 'BUY' ? '#10b981' : '#ef4444',
+                            fontWeight: '600'
+                          }}>
+                            {tradePreview.side}
+                          </span>
+                        </div>
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          marginBottom: '12px',
+                          padding: '12px 0',
+                          borderBottom: '1px solid rgba(6, 182, 212, 0.1)'
+                        }}>
+                          <span style={{ color: '#94a3b8' }}>Amount:</span>
+                          <span style={{ color: '#e2e8f0', fontWeight: '600' }}>
+                            {tradePreview.asset === 'BTC' ? formatCurrency(tradePreview.amount) : tradePreview.amount.toFixed(2) + ' shares'}
+                          </span>
+                        </div>
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          marginBottom: '12px',
+                          padding: '12px 0',
+                          borderBottom: '1px solid rgba(6, 182, 212, 0.1)'
+                        }}>
+                          <span style={{ color: '#94a3b8' }}>Price:</span>
+                          <span style={{ color: '#e2e8f0', fontWeight: '600' }}>
+                            {formatCurrency(tradePreview.price)}
+                          </span>
+                        </div>
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          marginBottom: '12px',
+                          padding: '12px 0',
+                          borderBottom: '1px solid rgba(6, 182, 212, 0.1)'
+                        }}>
+                          <span style={{ color: '#94a3b8' }}>Fees:</span>
+                          <span style={{ color: '#e2e8f0', fontWeight: '600' }}>
+                            {formatCurrency(tradePreview.fees)}
+                          </span>
+                        </div>
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          marginBottom: '24px',
+                          padding: '16px',
+                          background: 'rgba(6, 182, 212, 0.1)',
+                          borderRadius: '12px',
+                          border: '1px solid rgba(6, 182, 212, 0.2)'
+                        }}>
+                          <span style={{ color: '#94a3b8', fontSize: '16px', fontWeight: '600' }}>Total:</span>
+                          <span style={{ 
+                            color: '#06b6d4', 
+                            fontSize: '18px', 
+                            fontWeight: '700',
+                            textShadow: '0 0 20px rgba(6, 182, 212, 0.3)'
+                          }}>
+                            {formatCurrency(tradePreview.totalUSD)}
+                          </span>
                         </div>
                       </div>
 
-
-                      {/* Enhanced Trade Preview */}
-                      {tradeAmount && currentPrice && (
-                        <div style={{
-                          background: 'rgba(6, 182, 212, 0.08)',
-                          borderRadius: '16px',
-                          padding: '24px',
-                          marginBottom: '32px',
-                          border: '1px solid rgba(6, 182, 212, 0.2)',
-                          animation: 'slideIn 0.3s ease-out'
-                        }}>
-                          <h4 style={{ color: '#e2e8f0', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>
-                            Trade Preview
-                          </h4>
-                          {[
-                            ['Estimated ' + selectedAsset, selectedAsset === 'BTC' ? `${estimatedAssetAmount.toFixed(6)} BTC` : `${estimatedAssetAmount.toFixed(2)} shares`],
-                            ['Price', formatCurrency(currentPrice)],
-                            ['Fee (0.5%)', formatCurrency(parseFloat(tradeAmount || 0) * 0.005)]
-                          ].map(([label, value], index) => (
-                            <div key={index} style={{ 
-                              display: 'flex', 
-                              justifyContent: 'space-between', 
-                              marginBottom: '12px',
-                              padding: '8px 0'
-                            }}>
-                              <span style={{ color: '#94a3b8' }}>{label}:</span>
-                              <span style={{ fontWeight: '600', color: '#e2e8f0' }}>{value}</span>
-                            </div>
-                          ))}
-                          <hr style={{ 
-                            margin: '16px 0', 
-                            border: 'none', 
-                            borderTop: '1px solid rgba(6, 182, 212, 0.2)' 
-                          }} />
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ color: '#e2e8f0', fontWeight: '700', fontSize: '18px' }}>Total:</span>
-                            <span style={{ 
-                              fontWeight: '700', 
-                              color: '#06b6d4', 
-                              fontSize: '20px',
-                              textShadow: '0 0 15px rgba(6, 182, 212, 0.3)'
-                            }}>
-                              {formatCurrency(parseFloat(tradeAmount || 0))}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-
-                      {/* Warning for BTC sell from cold storage */}
-                      {tradeSide === 'SELL' && selectedAsset === 'BTC' && portfolio.btcHoldingsHot < estimatedAssetAmount && portfolio.btcHoldingsCold > 0 && (
-                        <div style={{
-                          background: 'rgba(239, 68, 68, 0.1)',
-                          border: '2px solid rgba(239, 68, 68, 0.3)',
-                          borderRadius: '16px',
-                          padding: '20px',
-                          marginBottom: '32px',
-                          animation: 'slideIn 0.3s ease-out'
-                        }}>
-                          <div style={{ 
-                            color: '#f87171', 
-                            fontWeight: '700', 
-                            marginBottom: '8px',
-                            fontSize: '16px'
-                          }}>⚠️ Insufficient Hot Wallet Balance</div>
-                          <div style={{ color: '#fca5a5', fontSize: '14px', lineHeight: '1.5' }}>
-                            You have {portfolio.btcHoldingsCold.toFixed(6)} BTC in cold storage. 
-                            Transfer to hot wallet first via multisig process.
-                          </div>
-                        </div>
-                      )}
-
-
-                      {/* Enhanced Execute Button */}
                       <button
-                        onClick={() => executeTrade(tradeSide, parseFloat(tradeAmount), selectedAsset)}
-                        disabled={!tradeAmount || !currentPrice || loading}
+                        onClick={handleExecuteTrade}
                         style={{
                           width: '100%',
-                          padding: '24px',
-                          background: !tradeAmount || !currentPrice || loading
-                            ? 'rgba(94, 108, 132, 0.3)'
-                            : tradeSide === 'BUY' 
-                              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                              : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                          padding: '18px',
+                          borderRadius: '12px',
                           border: 'none',
-                          borderRadius: '16px',
-                          color: 'white',
-                          fontSize: '20px',
-                          fontWeight: '700',
-                          cursor: !tradeAmount || !currentPrice || loading ? 'not-allowed' : 'pointer',
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          color: '#ffffff',
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
                           transition: 'all 0.3s ease',
-                          boxShadow: !tradeAmount || !currentPrice || loading 
-                            ? 'none'
-                            : tradeSide === 'BUY'
-                              ? '0 8px 25px rgba(16, 185, 129, 0.3)'
-                              : '0 8px 25px rgba(239, 68, 68, 0.3)',
-                          position: 'relative',
-                          overflow: 'hidden'
+                          boxShadow: '0 8px 25px rgba(16, 185, 129, 0.3)'
                         }}
                         onMouseEnter={(e) => {
-                          if (!(!tradeAmount || !currentPrice || loading)) {
-                            e.target.style.transform = 'translateY(-2px)'
-                            e.target.style.boxShadow = tradeSide === 'BUY'
-                              ? '0 12px 35px rgba(16, 185, 129, 0.4)'
-                              : '0 12px 35px rgba(239, 68, 68, 0.4)'
-                          }
+                          e.currentTarget.style.transform = 'translateY(-2px)'
+                          e.currentTarget.style.boxShadow = '0 12px 35px rgba(16, 185, 129, 0.4)'
                         }}
                         onMouseLeave={(e) => {
-                          if (!(!tradeAmount || !currentPrice || loading)) {
-                            e.target.style.transform = 'translateY(0)'
-                            e.target.style.boxShadow = tradeSide === 'BUY'
-                              ? '0 8px 25px rgba(16, 185, 129, 0.3)'
-                              : '0 8px 25px rgba(239, 68, 68, 0.3)'
-                          }
+                          e.currentTarget.style.transform = 'translateY(0)'
+                          e.currentTarget.style.boxShadow = '0 8px 25px rgba(16, 185, 129, 0.3)'
                         }}
                       >
-                        {loading ? (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-                            <div style={{
-                              width: '20px',
-                              height: '20px',
-                              border: '2px solid rgba(255, 255, 255, 0.3)',
-                              borderTop: '2px solid white',
-                              borderRadius: '50%',
-                              animation: 'spin 1s linear infinite'
-                            }} />
-                            Loading...
-                          </div>
-                        ) : (
-                          `${tradeSide} ${selectedAsset}`
-                        )}
+                        Execute Trade
                       </button>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-
-          {/* Enhanced Custody Tab */}
           {activeTab === 'custody' && (
             <div style={{ 
               display: 'flex', 
@@ -1665,285 +1495,142 @@ export default function ForesightEnterprise() {
                 boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3)',
                 backdropFilter: 'blur(20px)'
               }}>
-                <h1 style={{ 
-                  fontSize: '42px', 
-                  fontWeight: '800', 
+                <h2 style={{ 
                   color: '#e2e8f0', 
-                  marginBottom: '16px',
-                  textAlign: 'center',
-                  background: 'linear-gradient(135deg, #e2e8f0 0%, #06b6d4 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
+                  marginBottom: '40px', 
+                  fontSize: '32px', 
+                  fontWeight: '700',
+                  textAlign: 'center'
                 }}>
-                  Bitcoin Custody Management
-                </h1>
-                <p style={{ 
-                  color: '#94a3b8', 
-                  marginBottom: '50px', 
-                  fontSize: '18px',
-                  textAlign: 'center',
-                  maxWidth: '600px',
-                  margin: '0 auto 50px auto'
-                }}>
-                  Military-grade security with multi-signature protection and institutional insurance
-                </p>
-
+                  Custody Management
+                </h2>
 
                 <div style={{ 
                   display: 'grid', 
                   gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
                   gap: '40px' 
                 }}>
-                  {/* Enhanced Hot Wallet */}
                   <div style={{
-                    background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.15) 0%, rgba(251, 113, 133, 0.1) 100%)',
+                    background: 'rgba(251, 146, 60, 0.08)',
                     borderRadius: '24px',
                     padding: '40px',
-                    border: '1px solid rgba(251, 146, 60, 0.3)',
-                    position: 'relative',
-                    overflow: 'hidden'
+                    border: '1px solid rgba(251, 146, 60, 0.15)',
+                    backdropFilter: 'blur(10px)'
                   }}>
-                    <div style={{
-                      position: 'absolute',
-                      top: '-50%',
-                      left: '-50%',
-                      width: '200%',
-                      height: '200%',
-                      background: 'linear-gradient(45deg, transparent, rgba(251, 146, 60, 0.1), transparent)',
-                      animation: 'shine 6s ease-in-out infinite'
-                    }} />
-                    
-                    <div style={{ position: 'relative', zIndex: 1 }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center', 
-                        marginBottom: '32px' 
-                      }}>
-                        <h3 style={{ color: '#e2e8f0', fontSize: '24px', margin: 0, fontWeight: '700' }}>
-                          🔥 Hot Wallet
-                        </h3>
-                        <div style={{
-                          background: 'rgba(251, 146, 60, 0.3)',
-                          color: '#f59e0b',
-                          padding: '8px 16px',
-                          borderRadius: '20px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          ACTIVE
-                        </div>
+                    <h3 style={{ color: '#e2e8f0', marginBottom: '24px', fontSize: '20px', fontWeight: '600' }}>
+                      🔥 Hot Wallet
+                    </h3>
+                    <div style={{ marginBottom: '24px' }}>
+                      <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '8px' }}>
+                        {formatBTC(portfolio.btcHoldingsHot)}
                       </div>
-                      
-                      <div style={{ marginBottom: '24px' }}>
-                        <div style={{ 
-                          fontSize: '36px', 
-                          fontWeight: 'bold', 
-                          color: '#f59e0b', 
-                          marginBottom: '8px',
-                          textShadow: '0 0 30px rgba(251, 146, 60, 0.4)'
-                        }}>
-                          {portfolio.btcHoldingsHot.toFixed(6)} BTC
-                        </div>
-                        <div style={{ fontSize: '18px', color: '#94a3b8', fontWeight: '600' }}>
-                          {formatCurrency(portfolio.btcHoldingsHot * (marketData?.usd || 0))}
-                        </div>
+                      <div style={{ fontSize: '16px', color: '#94a3b8' }}>
+                        Available for immediate trading
                       </div>
-
-
-                      <div style={{ 
-                        background: 'rgba(255, 255, 255, 0.08)', 
-                        borderRadius: '16px', 
-                        padding: '24px',
-                        border: '1px solid rgba(251, 146, 60, 0.2)'
-                      }}>
-                        <div style={{ fontSize: '16px', color: '#e2e8f0', marginBottom: '16px', fontWeight: '600' }}>
-                          Security Features:
-                        </div>
-                        <ul style={{ 
-                          margin: 0, 
-                          paddingLeft: '20px', 
-                          color: '#94a3b8', 
-                          fontSize: '14px',
-                          lineHeight: '1.8'
-                        }}>
-                          <li>2FA Authentication</li>
-                          <li>API Rate Limiting</li>
-                          <li>Real-time Monitoring</li>
-                          <li>Instant Trading Access</li>
-                        </ul>
+                    </div>
+                    <div style={{ 
+                      padding: '16px', 
+                      background: 'rgba(251, 146, 60, 0.1)', 
+                      borderRadius: '12px',
+                      border: '1px solid rgba(251, 146, 60, 0.2)'
+                    }}>
+                      <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '8px' }}>
+                        Security Level: Hot Storage
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#94a3b8' }}>
+                        Insurance: $10M coverage
                       </div>
                     </div>
                   </div>
 
-
-                  {/* Enhanced Cold Storage */}
                   <div style={{
-                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.1) 100%)',
+                    background: 'rgba(34, 197, 94, 0.08)',
                     borderRadius: '24px',
                     padding: '40px',
-                    border: '1px solid rgba(59, 130, 246, 0.3)',
-                    position: 'relative',
-                    overflow: 'hidden'
+                    border: '1px solid rgba(34, 197, 94, 0.15)',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <h3 style={{ color: '#e2e8f0', marginBottom: '24px', fontSize: '20px', fontWeight: '600' }}>
+                      ❄️ Cold Storage
+                    </h3>
+                    <div style={{ marginBottom: '24px' }}>
+                      <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#10b981', marginBottom: '8px' }}>
+                        {formatBTC(portfolio.btcHoldingsCold)}
+                      </div>
+                      <div style={{ fontSize: '16px', color: '#94a3b8' }}>
+                        Multi-signature protected
+                      </div>
+                    </div>
+                    <div style={{ 
+                      padding: '16px', 
+                      background: 'rgba(34, 197, 94, 0.1)', 
+                      borderRadius: '12px',
+                      border: '1px solid rgba(34, 197, 94, 0.2)'
+                    }}>
+                      <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '8px' }}>
+                        Security Level: Cold Storage
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#94a3b8' }}>
+                        Insurance: $50M coverage
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ 
+                  marginTop: '40px',
+                  background: 'rgba(6, 182, 212, 0.08)',
+                  borderRadius: '24px',
+                  padding: '40px',
+                  border: '1px solid rgba(6, 182, 212, 0.15)',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <h3 style={{ color: '#e2e8f0', marginBottom: '24px', fontSize: '20px', fontWeight: '600' }}>
+                    Multi-Signature Configuration
+                  </h3>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+                    gap: '24px' 
                   }}>
                     <div style={{
-                      position: 'absolute',
-                      top: '-50%',
-                      right: '-50%',
-                      width: '200%',
-                      height: '200%',
-                      background: 'linear-gradient(-45deg, transparent, rgba(59, 130, 246, 0.1), transparent)',
-                      animation: 'shine 8s ease-in-out infinite reverse'
-                    }} />
-                    
-                    <div style={{ position: 'relative', zIndex: 1 }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center', 
-                        marginBottom: '32px' 
-                      }}>
-                        <h3 style={{ color: '#e2e8f0', fontSize: '24px', margin: 0, fontWeight: '700' }}>
-                          ❄️ Cold Storage
-                        </h3>
-                        <div style={{
-                          background: 'rgba(59, 130, 246, 0.3)',
-                          color: '#3b82f6',
-                          padding: '8px 16px',
-                          borderRadius: '20px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          SECURED
-                        </div>
+                      padding: '20px',
+                      background: 'rgba(6, 182, 212, 0.1)',
+                      borderRadius: '16px',
+                      border: '1px solid rgba(6, 182, 212, 0.2)'
+                    }}>
+                      <div style={{ fontSize: '16px', color: '#e2e8f0', marginBottom: '12px', fontWeight: '600' }}>
+                        Required Signers
                       </div>
-                      
-                      <div style={{ marginBottom: '24px' }}>
-                        <div style={{ 
-                          fontSize: '36px', 
-                          fontWeight: 'bold', 
-                          color: '#3b82f6', 
-                          marginBottom: '8px',
-                          textShadow: '0 0 30px rgba(59, 130, 246, 0.4)'
-                        }}>
-                          {coldStorage.totalBTC.toFixed(6)} BTC
-                        </div>
-                        <div style={{ fontSize: '18px', color: '#94a3b8', fontWeight: '600' }}>
-                          {formatCurrency(coldStorage.totalBTC * (marketData?.usd || 0))}
-                        </div>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#06b6d4' }}>
+                        {multisigConfig.requiredSigners} of {multisigConfig.totalSigners}
                       </div>
-
-
-                      <div style={{ 
-                        background: 'rgba(255, 255, 255, 0.08)', 
-                        borderRadius: '16px', 
-                        padding: '24px',
-                        marginBottom: '24px',
-                        border: '1px solid rgba(59, 130, 246, 0.2)'
-                      }}>
-                        <div style={{ fontSize: '16px', color: '#e2e8f0', marginBottom: '12px', fontWeight: '600' }}>
-                          Multisig Configuration:
-                        </div>
-                        <div style={{ 
-                          color: '#3b82f6', 
-                          fontWeight: '700', 
-                          marginBottom: '16px',
-                          fontSize: '18px'
-                        }}>
-                          {coldStorage.multisigConfig.requiredSignatures} of {coldStorage.multisigConfig.totalSigners} signatures required
-                        </div>
-                        <ul style={{ 
-                          margin: 0, 
-                          paddingLeft: '20px', 
-                          color: '#94a3b8', 
-                          fontSize: '14px',
-                          lineHeight: '1.8'
-                        }}>
-                          <li>Hardware Security Modules</li>
-                          <li>Offline Key Generation</li>
-                          <li>Geographic Distribution</li>
-                          <li>Insurance Coverage</li>
-                        </ul>
+                    </div>
+                    <div style={{
+                      padding: '20px',
+                      background: 'rgba(6, 182, 212, 0.1)',
+                      borderRadius: '16px',
+                      border: '1px solid rgba(6, 182, 212, 0.2)'
+                    }}>
+                      <div style={{ fontSize: '16px', color: '#e2e8f0', marginBottom: '12px', fontWeight: '600' }}>
+                        Security Level
                       </div>
-
-
-                      {/* Enhanced Transfer Interface */}
-                      {coldStorage.totalBTC > 0 && (
-                        <div style={{ 
-                          background: 'rgba(255, 255, 255, 0.08)', 
-                          borderRadius: '16px', 
-                          padding: '24px',
-                          border: '1px solid rgba(59, 130, 246, 0.2)'
-                        }}>
-                          <div style={{ fontSize: '16px', color: '#e2e8f0', marginBottom: '16px', fontWeight: '600' }}>
-                            Transfer to Hot Wallet:
-                          </div>
-                          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                            <input
-                              type="number"
-                              value={transferAmount}
-                              onChange={(e) => setTransferAmount(e.target.value)}
-                              placeholder="BTC amount"
-                              max={coldStorage.totalBTC}
-                              step="0.000001"
-                              style={{
-                                flex: 1,
-                                padding: '16px',
-                                border: '2px solid rgba(59, 130, 246, 0.3)',
-                                borderRadius: '12px',
-                                fontSize: '16px',
-                                background: 'rgba(59, 130, 246, 0.05)',
-                                color: '#e2e8f0',
-                                fontWeight: '600'
-                              }}
-                            />
-                            <button
-                              onClick={() => setTransferAmount(coldStorage.totalBTC.toString())}
-                              style={{
-                                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                                border: 'none',
-                                borderRadius: '12px',
-                                color: 'white',
-                                padding: '16px 20px',
-                                fontSize: '14px',
-                                cursor: 'pointer',
-                                fontWeight: '700',
-                                transition: 'all 0.3s ease'
-                              }}
-                            >
-                              MAX
-                            </button>
-                          </div>
-                          <button
-                            onClick={() => startMultisigTransfer(parseFloat(transferAmount))}
-                            disabled={!transferAmount || parseFloat(transferAmount) > coldStorage.totalBTC}
-                            style={{
-                              width: '100%',
-                              padding: '16px',
-                              background: !transferAmount || parseFloat(transferAmount) > coldStorage.totalBTC 
-                                ? 'rgba(59, 130, 246, 0.3)' 
-                                : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                              border: 'none',
-                              borderRadius: '12px',
-                              color: 'white',
-                              fontSize: '16px',
-                              cursor: !transferAmount || parseFloat(transferAmount) > coldStorage.totalBTC ? 'not-allowed' : 'pointer',
-                              fontWeight: '700',
-                              transition: 'all 0.3s ease',
-                              boxShadow: !transferAmount || parseFloat(transferAmount) > coldStorage.totalBTC 
-                                ? 'none' 
-                                : '0 4px 15px rgba(59, 130, 246, 0.3)'
-                            }}
-                          >
-                            Start Multisig Transfer
-                          </button>
-                        </div>
-                      )}
+                      <div style={{ fontSize: '16px', color: '#06b6d4', fontWeight: '600' }}>
+                        Enterprise Grade
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: '20px',
+                      background: 'rgba(6, 182, 212, 0.1)',
+                      borderRadius: '16px',
+                      border: '1px solid rgba(6, 182, 212, 0.2)'
+                    }}>
+                      <div style={{ fontSize: '16px', color: '#e2e8f0', marginBottom: '12px', fontWeight: '600' }}>
+                        Insurance Coverage
+                      </div>
+                      <div style={{ fontSize: '16px', color: '#06b6d4', fontWeight: '600' }}>
+                        $50M
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1951,8 +1638,6 @@ export default function ForesightEnterprise() {
             </div>
           )}
 
-
-          {/* Enhanced Reporting Tab - NEW COMPREHENSIVE SECTION */}
           {activeTab === 'reporting' && (
             <div style={{ 
               display: 'flex', 
@@ -1968,519 +1653,505 @@ export default function ForesightEnterprise() {
                 boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3)',
                 backdropFilter: 'blur(20px)'
               }}>
-                <h1 style={{ 
-                  fontSize: '42px', 
-                  fontWeight: '800', 
+                <h2 style={{ 
                   color: '#e2e8f0', 
-                  marginBottom: '16px',
-                  textAlign: 'center',
-                  background: 'linear-gradient(135deg, #e2e8f0 0%, #06b6d4 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
+                  marginBottom: '40px', 
+                  fontSize: '32px', 
+                  fontWeight: '700',
+                  textAlign: 'center'
                 }}>
-                  Treasury Reports & Analytics
-                </h1>
-                <p style={{ 
-                  color: '#94a3b8', 
-                  marginBottom: '50px', 
-                  fontSize: '18px',
-                  textAlign: 'center',
-                  maxWidth: '600px',
-                  margin: '0 auto 50px auto'
+                  Reporting & Analytics
+                </h2>
+
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
+                  gap: '32px',
+                  marginBottom: '40px'
                 }}>
-                  Comprehensive reporting suite for institutional compliance and performance analysis
-                </p>
+                  <div style={{
+                    background: 'rgba(6, 182, 212, 0.08)',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    border: '1px solid rgba(6, 182, 212, 0.15)',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px', fontWeight: '500' }}>
+                      Time Period
+                    </div>
+                    <select 
+                      value={reportFilters.timePeriod} 
+                      onChange={(e) => setReportFilters({...reportFilters, timePeriod: e.target.value})}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(6, 182, 212, 0.3)',
+                        background: 'rgba(6, 182, 212, 0.05)',
+                        color: '#e2e8f0',
+                        fontSize: '14px',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="1M">Last Month</option>
+                      <option value="3M">Last 3 Months</option>
+                      <option value="6M">Last 6 Months</option>
+                      <option value="1Y">Last Year</option>
+                      <option value="ALL">All Time</option>
+                    </select>
+                  </div>
 
+                  <div style={{
+                    background: 'rgba(6, 182, 212, 0.08)',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    border: '1px solid rgba(6, 182, 212, 0.15)',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px', fontWeight: '500' }}>
+                      Report Type
+                    </div>
+                    <select 
+                      value={reportFilters.reportType} 
+                      onChange={(e) => setReportFilters({...reportFilters, reportType: e.target.value})}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(6, 182, 212, 0.3)',
+                        background: 'rgba(6, 182, 212, 0.05)',
+                        color: '#e2e8f0',
+                        fontSize: '14px',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="portfolio">Portfolio Summary</option>
+                      <option value="trades">Trade History</option>
+                      <option value="performance">Performance Analysis</option>
+                      <option value="compliance">Compliance Report</option>
+                    </select>
+                  </div>
 
-                {/* Report Controls */}
-                <div style={{
+                  <div style={{
+                    background: 'rgba(6, 182, 212, 0.08)',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    border: '1px solid rgba(6, 182, 212, 0.15)',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px', fontWeight: '500' }}>
+                      Export Format
+                    </div>
+                    <select 
+                      value={reportFilters.exportFormat} 
+                      onChange={(e) => setReportFilters({...reportFilters, exportFormat: e.target.value})}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(6, 182, 212, 0.3)',
+                        background: 'rgba(6, 182, 212, 0.05)',
+                        color: '#e2e8f0',
+                        fontSize: '14px',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="PDF">PDF</option>
+                      <option value="CSV">CSV</option>
+                      <option value="XLSX">Excel</option>
+                      <option value="JSON">JSON</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+                  gap: '24px',
+                  marginBottom: '40px'
+                }}>
+                  <div style={{
+                    background: 'rgba(6, 182, 212, 0.08)',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    border: '1px solid rgba(6, 182, 212, 0.15)',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <div style={{ fontSize: '16px', color: '#e2e8f0', marginBottom: '12px', fontWeight: '600' }}>
+                      Total Trades
+                    </div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#06b6d4' }}>
+                      {portfolio.trades.length}
+                    </div>
+                  </div>
+                  <div style={{
+                    background: 'rgba(6, 182, 212, 0.08)',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    border: '1px solid rgba(6, 182, 212, 0.15)',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <div style={{ fontSize: '16px', color: '#e2e8f0', marginBottom: '12px', fontWeight: '600' }}>
+                      Portfolio Value
+                    </div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#06b6d4' }}>
+                      {formatCurrency(portfolio.totalValue)}
+                    </div>
+                  </div>
+                  <div style={{
+                    background: 'rgba(6, 182, 212, 0.08)',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    border: '1px solid rgba(6, 182, 212, 0.15)',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <div style={{ fontSize: '16px', color: '#e2e8f0', marginBottom: '12px', fontWeight: '600' }}>
+                      P&L Performance
+                    </div>
+                    <div style={{ 
+                      fontSize: '24px', 
+                      fontWeight: 'bold', 
+                      color: portfolio.unrealizedPL >= 0 ? '#10b981' : '#ef4444'
+                    }}>
+                      {portfolio.unrealizedPL >= 0 ? '+' : ''}{formatCurrency(portfolio.unrealizedPL)}
+                    </div>
+                  </div>
+                  <div style={{
+                    background: 'rgba(6, 182, 212, 0.08)',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    border: '1px solid rgba(6, 182, 212, 0.15)',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <div style={{ fontSize: '16px', color: '#e2e8f0', marginBottom: '12px', fontWeight: '600' }}>
+                      Cold Storage
+                    </div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981' }}>
+                      {formatBTC(portfolio.btcHoldingsCold)}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ 
                   background: 'rgba(6, 182, 212, 0.05)',
                   borderRadius: '24px',
                   padding: '40px',
                   border: '1px solid rgba(6, 182, 212, 0.1)',
-                  marginBottom: '40px'
+                  backdropFilter: 'blur(10px)'
                 }}>
-                  <h3 style={{ color: '#e2e8f0', marginBottom: '24px', fontSize: '24px', fontWeight: '700' }}>
-                    Generate Reports
-                  </h3>
-                  
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '32px' }}>
-                    {/* Period Selection */}
-                    <div>
-                      <label style={{ display: 'block', color: '#e2e8f0', fontWeight: '600', marginBottom: '12px' }}>
-                        Time Period
-                      </label>
-                      <select
-                        value={reportFilters.period}
-                        onChange={(e) => setReportFilters({...reportFilters, period: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '16px',
-                          border: '2px solid rgba(6, 182, 212, 0.2)',
-                          borderRadius: '12px',
-                          background: 'rgba(6, 182, 212, 0.05)',
-                          color: '#e2e8f0',
-                          fontSize: '16px',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <option value="7d">Last 7 Days</option>
-                        <option value="30d">Last 30 Days</option>
-                        <option value="90d">Last 90 Days</option>
-                        <option value="1y">Last Year</option>
-                        <option value="all">All Time</option>
-                      </select>
-                    </div>
-
-
-                    {/* Report Type */}
-                    <div>
-                      <label style={{ display: 'block', color: '#e2e8f0', fontWeight: '600', marginBottom: '12px' }}>
-                        Report Type
-                      </label>
-                      <select
-                        value={reportFilters.type}
-                        onChange={(e) => setReportFilters({...reportFilters, type: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '16px',
-                          border: '2px solid rgba(6, 182, 212, 0.2)',
-                          borderRadius: '12px',
-                          background: 'rgba(6, 182, 212, 0.05)',
-                          color: '#e2e8f0',
-                          fontSize: '16px',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <option value="performance">Performance Report</option>
-                        <option value="compliance">Compliance Report</option>
-                        <option value="risk">Risk Analysis</option>
-                        <option value="trades">Trade History</option>
-                        <option value="custody">Custody Report</option>
-                        <option value="executive">Executive Summary</option>
-                      </select>
-                    </div>
-
-
-                    {/* Format Selection */}
-                    <div>
-                      <label style={{ display: 'block', color: '#e2e8f0', fontWeight: '600', marginBottom: '12px' }}>
-                        Export Format
-                      </label>
-                      <select
-                        value={reportFilters.format}
-                        onChange={(e) => setReportFilters({...reportFilters, format: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '16px',
-                          border: '2px solid rgba(6, 182, 212, 0.2)',
-                          borderRadius: '12px',
-                          background: 'rgba(6, 182, 212, 0.05)',
-                          color: '#e2e8f0',
-                          fontSize: '16px',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <option value="pdf">PDF Report</option>
-                        <option value="csv">CSV Data</option>
-                        <option value="xlsx">Excel Spreadsheet</option>
-                        <option value="json">JSON Data</option>
-                      </select>
-                    </div>
-                  </div>
-
-
-                  {/* Generate Button */}
-                  <button
-                    onClick={() => generateReport(reportFilters.type, reportFilters.format)}
-                    style={{
-                      background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-                      border: 'none',
-                      borderRadius: '16px',
-                      color: 'white',
-                      padding: '20px 40px',
-                      fontSize: '18px',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 8px 25px rgba(6, 182, 212, 0.3)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-2px)'
-                      e.target.style.boxShadow = '0 12px 35px rgba(6, 182, 212, 0.4)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)'
-                      e.target.style.boxShadow = '0 8px 25px rgba(6, 182, 212, 0.3)'
-                    }}
-                  >
-                    <span style={{ fontSize: '20px' }}>📊</span>
-                    Generate {reportFilters.type.charAt(0).toUpperCase() + reportFilters.type.slice(1)} Report
-                  </button>
-                </div>
-
-
-                {/* Quick Stats Dashboard */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                  gap: '24px',
-                  marginBottom: '40px'
-                }}>
-                  {[
-                    { 
-                      title: 'Total Trades',
-                      value: portfolio.trades.length.toString(),
-                      icon: '📈',
-                      color: '#06b6d4'
-                    },
-                    {
-                      title: 'Portfolio Value',
-                      value: formatCurrency(portfolio.totalValue),
-                      icon: '💎',
-                      color: '#10b981'
-                    },
-                    {
-                      title: 'P&L Performance',
-                      value: `${portfolio.unrealizedPL >= 0 ? '+' : ''}${((portfolio.unrealizedPL / (portfolio.costBasis || 1)) * 100).toFixed(1)}%`,
-                      icon: portfolio.unrealizedPL >= 0 ? '📈' : '📉',
-                      color: portfolio.unrealizedPL >= 0 ? '#10b981' : '#ef4444'
-                    },
-                    {
-                      title: 'Cold Storage',
-                      value: `${((coldStorage.totalBTC / (portfolio.btcHoldings || 0.000001)) * 100).toFixed(1)}%`,
-                      icon: '❄️',
-                      color: '#3b82f6'
-                    }
-                  ].map((stat, index) => (
-                    <div key={index} style={{
-                      background: `linear-gradient(135deg, rgba(${stat.color === '#06b6d4' ? '6, 182, 212' : stat.color === '#10b981' ? '16, 185, 129' : stat.color === '#ef4444' ? '239, 68, 68' : '59, 130, 246'}, 0.1) 0%, rgba(${stat.color === '#06b6d4' ? '6, 182, 212' : stat.color === '#10b981' ? '16, 185, 129' : stat.color === '#ef4444' ? '239, 68, 68' : '59, 130, 246'}, 0.05) 100%)`,
-                      borderRadius: '20px',
-                      padding: '32px',
-                      border: `1px solid rgba(${stat.color === '#06b6d4' ? '6, 182, 212' : stat.color === '#10b981' ? '16, 185, 129' : stat.color === '#ef4444' ? '239, 68, 68' : '59, 130, 246'}, 0.2)`,
-                      textAlign: 'center'
-                    }}>
-                      <div style={{ fontSize: '32px', marginBottom: '16px' }}>{stat.icon}</div>
-                      <div style={{ fontSize: '28px', fontWeight: 'bold', color: stat.color, marginBottom: '8px' }}>
-                        {stat.value}
-                      </div>
-                      <div style={{ fontSize: '16px', color: '#94a3b8', fontWeight: '600' }}>
-                        {stat.title}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-
-                {/* Recent Reports */}
-                <div style={{
-                  background: 'rgba(6, 182, 212, 0.05)',
-                  borderRadius: '24px',
-                  padding: '40px',
-                  border: '1px solid rgba(6, 182, 212, 0.1)'
-                }}>
-                  <h3 style={{ color: '#e2e8f0', marginBottom: '24px', fontSize: '24px', fontWeight: '700' }}>
+                  <h3 style={{ color: '#e2e8f0', marginBottom: '24px', fontSize: '20px', fontWeight: '600' }}>
                     Available Report Templates
                   </h3>
-                  
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+                    gap: '20px' 
+                  }}>
                     {[
-                      {
-                        title: 'Monthly Treasury Report',
-                        description: 'Comprehensive monthly performance and allocation analysis',
-                        icon: '📋',
-                        type: 'performance'
-                      },
-                      {
-                        title: 'Compliance Audit Trail',
-                        description: 'Complete transaction history with regulatory compliance data',
-                        icon: '🔍',
-                        type: 'compliance'
-                      },
-                      {
-                        title: 'Risk Assessment',
-                        description: 'Portfolio risk metrics, VaR analysis, and stress testing',
-                        icon: '⚠️',
-                        type: 'risk'
-                      },
-                      {
-                        title: 'Executive Dashboard',
-                        description: 'High-level summary for board presentations and stakeholders',
-                        icon: '👔',
-                        type: 'executive'
-                      }
+                      { title: 'Monthly Treasury Report', desc: 'Comprehensive monthly overview with performance metrics', icon: '📊' },
+                      { title: 'Compliance Audit Report', desc: 'Regulatory compliance and audit trail summary', icon: '🔒' },
+                      { title: 'Risk Assessment Report', desc: 'Portfolio risk analysis and stress testing', icon: '⚠️' },
+                      { title: 'Executive Summary Report', desc: 'Board-ready summary with key insights', icon: '📈' }
                     ].map((template, index) => (
                       <div key={index} style={{
+                        padding: '20px',
                         background: 'rgba(6, 182, 212, 0.08)',
                         borderRadius: '16px',
-                        padding: '24px',
-                        border: '1px solid rgba(6, 182, 212, 0.2)',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
+                        border: '1px solid rgba(6, 182, 212, 0.15)',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'translateY(-4px)'
-                        e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.4)'
+                        e.currentTarget.style.background = 'rgba(6, 182, 212, 0.12)'
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.2)'
+                        e.currentTarget.style.background = 'rgba(6, 182, 212, 0.08)'
                       }}
-                      onClick={() => generateReport(template.type, 'pdf')}
                       >
-                        <div style={{ fontSize: '32px', marginBottom: '16px', textAlign: 'center' }}>
-                          {template.icon}
-                        </div>
-                        <h4 style={{ color: '#e2e8f0', fontSize: '18px', fontWeight: '700', marginBottom: '12px' }}>
+                        <div style={{ fontSize: '24px', marginBottom: '12px' }}>{template.icon}</div>
+                        <div style={{ fontSize: '16px', color: '#e2e8f0', marginBottom: '8px', fontWeight: '600' }}>
                           {template.title}
-                        </h4>
-                        <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: '1.5', marginBottom: '16px' }}>
-                          {template.description}
-                        </p>
-                        <div style={{
-                          background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-                          color: 'white',
-                          padding: '8px 16px',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          textAlign: 'center',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          Generate Report
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#94a3b8', lineHeight: '1.4' }}>
+                          {template.desc}
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
+
+                <div style={{ textAlign: 'center', marginTop: '40px' }}>
+                  <button
+                    onClick={generateReport}
+                    style={{
+                      padding: '20px 40px',
+                      borderRadius: '16px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                      color: '#ffffff',
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 8px 25px rgba(6, 182, 212, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                      e.currentTarget.style.boxShadow = '0 12px 35px rgba(6, 182, 212, 0.4)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(6, 182, 212, 0.3)'
+                    }}
+                  >
+                    Generate Report
+                  </button>
+                </div>
               </div>
             </div>
           )}
-          {/* Other Enhanced Tabs */}
-          {activeTab === 'company' && (
+
+          {activeTab === 'company' && <CompanyProfile />}
+          {activeTab === 'privacy' && <PrivacyPolicy />}
+          {activeTab === 'terms' && <TermsConditions />}
+        </main>
+
+        {/* BTC Custody Prompt Modal */}
+        {showCustodyPrompt && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(10px)',
+            animation: 'fadeIn 0.3s ease-out'
+          }}>
             <div style={{
-              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(8, 145, 178, 0.05) 100%)',
+              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.95) 0%, rgba(8, 145, 178, 0.95) 100%)',
               borderRadius: '28px',
               padding: '60px',
-              border: '1px solid rgba(6, 182, 212, 0.2)',
+              maxWidth: '500px',
+              width: '90%',
+              textAlign: 'center',
+              border: '1px solid rgba(6, 182, 212, 0.3)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
               backdropFilter: 'blur(20px)',
-              animation: 'slideUp 0.6s ease-out'
+              animation: 'slideUp 0.4s ease-out'
             }}>
-              <h1 style={{ 
-                fontSize: '42px', 
-                fontWeight: '800', 
-                color: '#e2e8f0', 
-                marginBottom: '32px',
-                textAlign: 'center',
-                background: 'linear-gradient(135deg, #e2e8f0 0%, #06b6d4 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
+              <h3 style={{ 
+                color: '#ffffff', 
+                marginBottom: '24px', 
+                fontSize: '24px', 
+                fontWeight: '700' 
               }}>
-                Company Profile
-              </h1>
+                BTC Custody Decision
+              </h3>
+              <p style={{ 
+                color: '#e2e8f0', 
+                marginBottom: '40px', 
+                fontSize: '16px',
+                lineHeight: '1.6'
+              }}>
+                Your BTC purchase has been executed successfully! Where would you like to store your Bitcoin?
+              </p>
+              <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+                <button
+                  onClick={() => handleCustodyDecision('hot')}
+                  style={{
+                    padding: '16px 32px',
+                    borderRadius: '16px',
+                    border: 'none',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    color: '#ffffff',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    border: '1px solid rgba(255, 255, 255, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                >
+                  🔥 Hot Wallet
+                </button>
+                <button
+                  onClick={() => handleCustodyDecision('cold')}
+                  style={{
+                    padding: '16px 32px',
+                    borderRadius: '16px',
+                    border: 'none',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    color: '#ffffff',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    border: '1px solid rgba(255, 255, 255, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                >
+                  ❄️ Cold Storage
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Multisig Transfer Modal */}
+        {showMultisigModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(10px)',
+            animation: 'fadeIn 0.3s ease-out'
+          }}>
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.95) 0%, rgba(16, 185, 129, 0.95) 100%)',
+              borderRadius: '28px',
+              padding: '60px',
+              maxWidth: '600px',
+              width: '90%',
+              textAlign: 'center',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+              backdropFilter: 'blur(20px)',
+              animation: 'slideUp 0.4s ease-out'
+            }}>
+              <h3 style={{ 
+                color: '#ffffff', 
+                marginBottom: '24px', 
+                fontSize: '24px', 
+                fontWeight: '700' 
+              }}>
+                Multi-Signature Security Check
+              </h3>
+              <p style={{ 
+                color: '#e2e8f0', 
+                marginBottom: '32px', 
+                fontSize: '16px',
+                lineHeight: '1.6'
+              }}>
+                Step {multisigConfig.currentStep} of {multisigConfig.totalSteps}: {multisigConfig.steps[multisigConfig.currentStep - 1]}
+              </p>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '40px' }}>
-                <div style={{
-                  background: 'rgba(6, 182, 212, 0.08)',
-                  borderRadius: '20px',
-                  padding: '40px',
-                  border: '1px solid rgba(6, 182, 212, 0.2)'
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '20px',
+                padding: '32px',
+                marginBottom: '32px',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}>
+                <div style={{ fontSize: '18px', color: '#ffffff', marginBottom: '16px', fontWeight: '600' }}>
+                  Transfer Details
+                </div>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1fr', 
+                  gap: '16px',
+                  textAlign: 'left'
                 }}>
-                  <h3 style={{ color: '#e2e8f0', marginBottom: '24px', fontSize: '22px', fontWeight: '700' }}>
-                    Company Information
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {[
-                      ['Company Name', 'Treasury Corp'],
-                      ['Founded', '2020'],
-                      ['Industry', 'Financial Technology'],
-                      ['Headquarters', 'San Francisco, CA'],
-                      ['Treasury Lead', 'John Smith'],
-                      ['Regulatory Status', 'FINRA Registered'],
-                      ['Insurance Coverage', '$500M AIG Policy']
-                    ].map(([label, value], index) => (
-                      <div key={index} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        padding: '16px',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        borderRadius: '12px',
-                        border: '1px solid rgba(6, 182, 212, 0.1)'
-                      }}>
-                        <span style={{ color: '#94a3b8', fontWeight: '600' }}>{label}:</span>
-                        <span style={{ color: '#e2e8f0', fontWeight: '700' }}>{value}</span>
-                      </div>
-                    ))}
+                  <div>
+                    <div style={{ fontSize: '14px', color: '#94a3b8' }}>Asset:</div>
+                    <div style={{ fontSize: '16px', color: '#ffffff', fontWeight: '600' }}>Bitcoin (BTC)</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '14px', color: '#94a3b8' }}>Amount:</div>
+                    <div style={{ fontSize: '16px', color: '#ffffff', fontWeight: '600' }}>
+                      {formatBTC(pendingBtcTrade?.amount || 0)}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '14px', color: '#94a3b8' }}>From:</div>
+                    <div style={{ fontSize: '16px', color: '#ffffff', fontWeight: '600' }}>Cold Storage</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '14px', color: '#94a3b8' }}>To:</div>
+                    <div style={{ fontSize: '16px', color: '#ffffff', fontWeight: '600' }}>Hot Wallet</div>
                   </div>
                 </div>
-
-
-                <div style={{
-                  background: 'rgba(6, 182, 212, 0.08)',
-                  borderRadius: '20px',
-                  padding: '40px',
-                  border: '1px solid rgba(6, 182, 212, 0.2)'
-                }}>
-                  <h3 style={{ color: '#e2e8f0', marginBottom: '24px', fontSize: '22px', fontWeight: '700' }}>
-                    Bitcoin Treasury Policy
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {[
-                      ['Target Allocation', '5-15% of cash reserves'],
-                      ['Rebalancing', 'Monthly review'],
-                      ['Custody', 'Multi-signature cold storage'],
-                      ['Risk Management', 'Dollar-cost averaging strategy'],
-                      ['Compliance', 'GAAP/IFRS compliant'],
-                      ['Audit Frequency', 'Quarterly external audits'],
-                      ['Insurance', 'Cold storage fully insured']
-                    ].map(([label, value], index) => (
-                      <div key={index} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        padding: '16px',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        borderRadius: '12px',
-                        border: '1px solid rgba(6, 182, 212, 0.1)'
-                      }}>
-                        <span style={{ color: '#94a3b8', fontWeight: '600' }}>{label}:</span>
-                        <span style={{ color: '#e2e8f0', fontWeight: '700' }}>{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
+
+              <button
+                onClick={processMultisigSignature}
+                style={{
+                  padding: '18px 36px',
+                  borderRadius: '16px',
+                  border: 'none',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  color: '#ffffff',
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  border: '1px solid rgba(255, 255, 255, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+              >
+                {multisigConfig.currentStep === multisigConfig.totalSteps ? 'Complete Transfer' : 'Next Security Check'}
+              </button>
             </div>
-          )}
+          </div>
+        )}
 
-
-          {activeTab === 'privacy' && (
+        {/* Portfolio Detail Modal */}
+        {showPortfolioDetail && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(10px)',
+            animation: 'fadeIn 0.3s ease-out'
+          }}>
             <div style={{
-              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(8, 145, 178, 0.05) 100%)',
+              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.95) 0%, rgba(8, 145, 178, 0.95) 100%)',
               borderRadius: '28px',
               padding: '60px',
-              border: '1px solid rgba(6, 182, 212, 0.2)',
-              backdropFilter: 'blur(20px)',
+              maxWidth: '800px',
+              width: '90%',
               maxHeight: '80vh',
               overflow: 'auto',
-              animation: 'slideUp 0.6s ease-out'
-            }}>
-              <h1 style={{ 
-                fontSize: '42px', 
-                fontWeight: '800', 
-                color: '#e2e8f0', 
-                marginBottom: '32px',
-                textAlign: 'center',
-                background: 'linear-gradient(135deg, #e2e8f0 0%, #06b6d4 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>
-                Privacy Policy
-              </h1>
-              
-              <div style={{ color: '#94a3b8', lineHeight: '1.8', fontSize: '16px' }}>
-                <div style={{
-                  background: 'rgba(6, 182, 212, 0.08)',
-                  borderRadius: '16px',
-                  padding: '24px',
-                  marginBottom: '24px',
-                  border: '1px solid rgba(6, 182, 212, 0.2)'
-                }}>
-                  <h3 style={{ color: '#e2e8f0', marginBottom: '16px', fontSize: '20px', fontWeight: '700' }}>
-                    1. Information We Collect
-                  </h3>
-                  <p>We collect information necessary to provide our Bitcoin treasury management services, including account information, transaction data, and usage analytics. All data is encrypted and stored securely.</p>
-                </div>
-                
-                <div style={{
-                  background: 'rgba(6, 182, 212, 0.08)',
-                  borderRadius: '16px',
-                  padding: '24px',
-                  marginBottom: '24px',
-                  border: '1px solid rgba(6, 182, 212, 0.2)'
-                }}>
-                  <h3 style={{ color: '#e2e8f0', marginBottom: '16px', fontSize: '20px', fontWeight: '700' }}>
-                    2. How We Use Information
-                  </h3>
-                  <p>Your information is used to provide secure treasury management services, ensure compliance with regulations, and improve our platform. We never sell or monetize your personal data.</p>
-                </div>
-                
-                <div style={{
-                  background: 'rgba(6, 182, 212, 0.08)',
-                  borderRadius: '16px',
-                  padding: '24px',
-                  marginBottom: '24px',
-                  border: '1px solid rgba(6, 182, 212, 0.2)'
-                }}>
-                  <h3 style={{ color: '#e2e8f0', marginBottom: '16px', fontSize: '20px', fontWeight: '700' }}>
-                    3. Data Security
-                  </h3>
-                  <p>We implement industry-leading security measures including encryption, multi-signature protocols, and secure storage to protect your data and assets. All systems are SOC 2 Type II compliant.</p>
-                </div>
-                
-                <div style={{
-                  background: 'rgba(6, 182, 212, 0.08)',
-                  borderRadius: '16px',
-                  padding: '24px',
-                  marginBottom: '24px',
-                  border: '1px solid rgba(6, 182, 212, 0.2)'
-                }}>
-                  <h3 style={{ color: '#e2e8f0', marginBottom: '16px', fontSize: '20px', fontWeight: '700' }}>
-                    4. Information Sharing
-                  </h3>
-                  <p>We do not sell or share your personal information with third parties except as required by law or to provide our services. All sharing is documented and audited.</p>
-                </div>
-                
-                <div style={{
-                  background: 'rgba(6, 182, 212, 0.08)',
-                  borderRadius: '16px',
-                  padding: '24px',
-                  border: '1px solid rgba(6, 182, 212, 0.2)'
-                }}>
-                  <h3 style={{ color: '#e2e8f0', marginBottom: '16px', fontSize: '20px', fontWeight: '700' }}>
-                    5. Contact Us
-                  </h3>
-                  <p>For privacy-related questions, contact us at privacy@foresightenterprise.com or call our compliance hotline at +1 (555) 123-4567.</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-
-          {activeTab === 'terms' && (
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(8, 145, 178, 0.05) 100%)',
-              borderRadius: '28px',
-              padding: '60px',
-              border: '1px solid rgba(6, 182, 212, 0.2)',
-              backdropFilter: 'blur(20px)',
-              maxHeight: '80vh',
-              overflow: 'auto',
-              animation: 'slideUp 0.6s ease-out'
-            }}>
-              <h1 style={{ 
-                fontSize: '42px', 
-                fontWeight: '800', 
-                color: '#e2e8f0', 
-                marginBottom: '32px',
-                textAlign: 'center',
-                background: 'linear-gradient(135deg, #e2e8f0 0%, #06b6d4 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>
-                Terms & Conditions
-              </h1>
-              
-              <div style={{ color: '#94a3b8', lineHeight: '1.8', fontSize: '16px' }}>
-                <div style={{
-                  background: 'rgba(6, 182, 212, 0.08)',
-                  borderRadius: '16px',
-                  padding: '24px',
-                  marginBottom: '24px'
+              border: '1px solid rgba(6, 182, 212, 0.3)',
+              boxShadow: 
