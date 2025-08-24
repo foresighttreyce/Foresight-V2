@@ -563,4 +563,272 @@ function Trade() {
 function Custody() {
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="text
+      <div className="text-center mb-12">
+        <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 dark:from-white dark:to-blue-200 bg-clip-text text-transparent mb-4">
+          Digital Asset Custody
+        </h2>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          Bank-grade security with institutional insurance coverage
+        </p>
+      </div>
+      
+      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
+        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">Multi-Signature Wallet Infrastructure</h3>
+        <div className="space-y-6">
+          <WalletRow 
+            name="Primary Cold Storage Vault" 
+            balance="1,150.25 BTC" 
+            tier="Cold" 
+            insured="$45,000,000"
+            status="Secure"
+            signers="3/5"
+          />
+          <WalletRow 
+            name="Operational Treasury Wallet" 
+            balance="84.33 BTC" 
+            tier="Warm" 
+            insured="$3,200,000"
+            status="Active"
+            signers="2/3"
+          />
+          <WalletRow 
+            name="Emergency Backup Reserve" 
+            balance="0.00 BTC" 
+            tier="Cold" 
+            insured="$10,000,000"
+            status="Standby"
+            signers="4/7"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function WalletRow({ name, balance, tier, insured, status, signers }) {
+  const tierColors = {
+    Cold: 'from-blue-500 to-indigo-500',
+    Warm: 'from-yellow-500 to-orange-500',
+    Hot: 'from-red-500 to-pink-500'
+  }
+  
+  const statusColors = {
+    Secure: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    Active: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    Standby: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400'
+  }
+
+  return (
+    <div className="flex items-center justify-between p-6 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl hover:bg-slate-100/50 dark:hover:bg-slate-700/30 transition-all duration-200">
+      <div className="flex items-center space-x-4">
+        <div className={`w-16 h-16 bg-gradient-to-r ${tierColors[tier]} rounded-2xl flex items-center justify-center text-white shadow-lg`}>
+          <span className="text-2xl">🔒</span>
+        </div>
+        <div>
+          <h4 className="text-xl font-bold text-slate-900 dark:text-white">{name}</h4>
+          <p className="text-lg text-slate-600 dark:text-slate-400 font-medium">{balance}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Signers: {signers}</p>
+        </div>
+      </div>
+      <div className="text-right space-y-2">
+        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColors[status]}`}>
+          {status}
+        </div>
+        <div className={`px-3 py-1 bg-gradient-to-r ${tierColors[tier]} text-white rounded-lg text-sm font-medium`}>
+          {tier} Storage
+        </div>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Insured: {insured}</p>
+      </div>
+    </div>
+  )
+}
+
+function Reporting() {
+  return (
+    <div className="max-w-6xl mx-auto">
+      <div className="text-center mb-12">
+        <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 dark:from-white dark:to-blue-200 bg-clip-text text-transparent mb-4">
+          Executive Reporting Suite
+        </h2>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          Board-ready analytics and compliance documentation
+        </p>
+      </div>
+      
+      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
+        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">Generate Monthly CFO Pack</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            <ReportOption title="Treasury Allocation Summary" description="Portfolio composition and allocation metrics" checked={true} />
+            <ReportOption title="Performance vs Benchmarks" description="Comparative analysis against indices" checked={true} />
+            <ReportOption title="Risk Analytics Dashboard" description="Volatility, VaR, and stress testing" checked={true} />
+            <ReportOption title="Compliance & Audit Trail" description="Regulatory compliance documentation" checked={false} />
+            <ReportOption title="Board-Ready Presentations" description="Executive summary slides" checked={false} />
+          </div>
+          <div className="space-y-6">
+            <button className="w-full py-4 px-6 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-2xl font-bold text-lg hover:scale-105 transition-transform duration-200 shadow-lg">
+              📊 Generate PDF Report
+            </button>
+            <button className="w-full py-4 px-6 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-2xl font-bold text-lg hover:scale-105 transition-transform duration-200 shadow-lg">
+              📈 Export to Excel
+            </button>
+            <div className="bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl p-4">
+              <h4 className="font-bold text-slate-900 dark:text-white mb-2">Quick Export Options</h4>
+              <div className="space-y-2">
+                <button className="w-full text-left p-3 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                  📋 NetSuite Journal Entries
+                </button>
+                <button className="w-full text-left p-3 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                  💼 QuickBooks Integration
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ReportOption({ title, description, checked }) {
+  return (
+    <label className="flex items-start space-x-3 p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl hover:bg-slate-100/50 dark:hover:bg-slate-700/30 transition-all duration-200 cursor-pointer">
+      <input 
+        type="checkbox" 
+        className="mt-1 w-5 h-5 text-orange-500 rounded border-2 border-slate-300 dark:border-slate-600 focus:ring-orange-500" 
+        defaultChecked={checked} 
+      />
+      <div>
+        <h4 className="font-bold text-slate-900 dark:text-white">{title}</h4>
+        <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
+      </div>
+    </label>
+  )
+}
+
+function Compliance() {
+  return (
+    <div className="max-w-6xl mx-auto">
+      <div className="text-center mb-12">
+        <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 dark:from-white dark:to-blue-200 bg-clip-text text-transparent mb-4">
+          Regulatory Compliance
+        </h2>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          Automated compliance monitoring and audit trail management
+        </p>
+      </div>
+      
+      <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
+        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">Compliance Dashboard</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ComplianceItem item="GAAP Fair Value Measurement" status="Current" description="ASC 820 compliant valuation" />
+          <ComplianceItem item="IFRS Digital Asset Reporting" status="Current" description="IAS 38 intangible asset treatment" />
+          <ComplianceItem item="SOX Internal Controls" status="Review" description="Section 404 control documentation" />
+          <ComplianceItem item="SEC Digital Asset Guidance" status="Current" description="Staff accounting bulletins compliance" />
+          <ComplianceItem item="AML/KYC Documentation" status="Current" description="Customer due diligence records" />
+          <ComplianceItem item="Audit Trail Integrity" status="Current" description="Immutable transaction logging" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ComplianceItem({ item, status, description }) {
+  const statusConfig = {
+    Current: { color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: '✅' },
+    Review: { color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400', icon: '⚠️' },
+    Expired: { color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: '❌' }
+  }
+
+  return (
+    <div className="p-6 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl hover:bg-slate-100/50 dark:hover:bg-slate-700/30 transition-all duration-200">
+      <div className="flex items-start justify-between mb-3">
+        <h4 className="font-bold text-slate-900 dark:text-white">{item}</h4>
+        <div className={`flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium ${statusConfig[status].color}`}>
+          <span>{statusConfig[status].icon}</span>
+          <span>{status}</span>
+        </div>
+      </div>
+      <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
+    </div>
+  )
+}
+
+function Admin() {
+  return (
+    <div className="max-w-6xl mx-auto">
+      <div className="text-center mb-12">
+        <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 dark:from-white dark:to-blue-200 bg-clip-text text-transparent mb-4">
+          System Administration
+        </h2>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          Enterprise user management and system configuration
+        </p>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">User Management</h3>
+          <div className="space-y-4">
+            <AdminUserRow name="John Smith" role="Chief Financial Officer" email="john.smith@company.com" status="Active" />
+            <AdminUserRow name="Sarah Johnson" role="Corporate Treasurer" email="sarah.johnson@company.com" status="Active" />
+            <AdminUserRow name="Mike Chen" role="Financial Analyst" email="mike.chen@company.com" status="Inactive" />
+            <AdminUserRow name="Lisa Wang" role="Risk Manager" email="lisa.wang@company.com" status="Active" />
+          </div>
+        </div>
+        
+        <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">System Configuration</h3>
+          <div className="space-y-6">
+            <SystemSetting title="API Rate Limiting" value="1000 req/min" status="Enabled" />
+            <SystemSetting title="Audit Logging" value="All actions" status="Enabled" />
+            <SystemSetting title="Two-Factor Authentication" value="Required" status="Enabled" />
+            <SystemSetting title="Session Timeout" value="30 minutes" status="Configured" />
+            <SystemSetting title="SSO Integration" value="SAML 2.0" status="Pending" />
+            <SystemSetting title="Data Encryption" value="AES-256" status="Enabled" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AdminUserRow({ name, role, email, status }) {
+  return (
+    <div className="flex items-center justify-between p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl hover:bg-slate-100/50 dark:hover:bg-slate-700/30 transition-all duration-200">
+      <div className="flex items-center space-x-4">
+        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold shadow-lg">
+          {name.split(' ').map(n => n[0]).join('')}
+        </div>
+        <div>
+          <p className="font-bold text-slate-900 dark:text-white">{name}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">{role}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-500">{email}</p>
+        </div>
+      </div>
+      <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+        status === 'Active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-900/30 dark:text-slate-400'
+      }`}>
+        {status}
+      </div>
+    </div>
+  )
+}
+
+function SystemSetting({ title, value, status }) {
+  return (
+    <div className="flex items-center justify-between p-4 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl">
+      <div>
+        <p className="font-bold text-slate-900 dark:text-white">{title}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400">{value}</p>
+      </div>
+      <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+        status === 'Enabled' || status === 'Configured' 
+          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+      }`}>
+        {status}
+      </div>
+    </div>
+  )
+}
