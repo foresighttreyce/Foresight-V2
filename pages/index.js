@@ -9,877 +9,1081 @@ export default function ForesightEnterprise() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showPortfolioDetail, setShowPortfolioDetail] = useState(false)
   const [showTransferModal, setShowTransferModal] = useState(false)
+  const [showCustodyPrompt, setShowCustodyPrompt] = useState(false)
+  const [showMultisigModal, setShowMultisigModal] = useState(false)
+  const [pendingBtcTrade, setPendingBtcTrade] = useState(null)
+  const [multisigStep, setMultisigStep] = useState(0)
   const [selectedTrade, setSelectedTrade] = useState(null)
   
+  // Enhanced portfolio state with hot/cold storage separation
   const [portfolio, setPortfolio] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('foresight-portfolio')
-      if (saved) return JSON.parse(saved)
+      if (saved) {
+        return JSON.parse(saved)
+      }
     }
     return {
-      cashUSD: 10000000,
+      cashUSD: 1000000,
       btcHoldings: 0,
-      stockHoldings: { MSTR: 0, STRC: 0, STRK: 0, STRF: 0, STRD: 0 },
-      totalValue: 10000000,
+      btcHoldingsHot: 0,      // BTC in hot wallet
+      btcHoldingsCold: 0,     // BTC in cold storage
+      totalValue: 1000000,
       unrealizedPL: 0,
       costBasis: 0,
-      stockCostBasis: {},
       trades: [],
-      hotStorage: { btc: 0, stocks: {}, trades: [] },
-      coldStorage: { btc: 0, stocks: {}, trades: [], pending: [] }
+      stocks: {
+        MSTR: { shares: 0, costBasis: 0 },
+        STRE: { shares: 0, costBasis: 0 },
+        STRK: { shares: 0, costBasis: 0 },
+        STRF: { shares: 0, costBasis: 0 },
+        STRD: { shares: 0, costBasis: 0 }
+      }
     }
   })
 
+  const [coldStorage, setColdStorage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('foresight-cold-storage')
+      if (saved) {
+        return JSON.parse(saved)
+      }
+    }
+    return {
+      totalBTC: 0,
+      transactions: [],
+      multisigConfig: {
+        requiredSignatures: 3,
+        totalSigners: 5,
+        signers: [
+          { name: 'Treasury Lead', status: 'pending' },
+          { name: 'CFO', status: 'pending' },
+          { name: 'Security Officer', status: 'pending' },
+          { name: 'Compliance', status: 'pending' },
+          { name: 'CEO', status: 'pending' }
+        ]
+      }
+    }
+  })
+
+  // Save to localStorage whenever portfolio or cold storage changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('foresight-portfolio', JSON.stringify(portfolio))
+      localStorage.setItem('foresight-cold-storage', JSON.stringify(coldStorage))
     }
-  }, [portfolio])
+  }, [portfolio, coldStorage])
 
+  // Fetch market data
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true')
-        const data = await response.json()
-        setMarketData(data.bitcoin)
+        setLoading(true)
+        
+        // Fetch Bitcoin data
+        const btcResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true')
+        const btcData = await btcResponse.json()
+        
+        // Fetch stock data
+        const stockSymbols = ['MSTR', 'STRE', 'STRK', 'STRF', 'STRD']
+        const stockPromises = stockSymbols.map(async (symbol) => {
+          // Using Alpha Vantage API (free tier) - you'd need to replace with your preferred stock API
+          const mockPrice = Math.random() * 200 + 50 // Mock data for demo
+          return {
+            symbol,
+            price: mockPrice,
+            change24h: (Math.random() - 0.5) * 20
+          }
+        })
+        
+        const stocks = await Promise.all(stockPromises)
+        const stockData = {}
+        stocks.forEach(stock => {
+          stockData[stock.symbol] = {
+            usd: stock.price,
+            usd_24h_change: stock.change24h
+          }
+        })
+        
+        setMarketData(btcData.bitcoin)
+        setStockData(stockData)
       } catch (error) {
-        setMarketData({ usd: 43250, usd_24h_change: 2.34 })
+        console.error('Error fetching market data:', error)
+      } finally {
+        setLoading(false)
       }
     }
-    
-    const mockStocks = {
-      MSTR: { price: 485.50, change: 8.2 },
-      STRC: { price: 52.30, change: -2.1 },
-      STRK: { price: 28.90, change: 5.7 },
-      STRF: { price: 31.45, change: 3.2 },
-      STRD: { price: 19.80, change: -1.8 }
-    }
-    setStockData(mockStocks)
-    setLoading(false)
+
     fetchMarketData()
     const interval = setInterval(fetchMarketData, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  useEffect(() => {
-    if (marketData && Object.keys(stockData).length > 0) {
-      const btcValue = portfolio.btcHoldings * marketData.usd
-      const stockValue = Object.entries(portfolio.stockHoldings).reduce((total, [symbol, shares]) => {
-        return total + (shares * (stockData[symbol]?.price || 0))
-      }, 0)
-      const newTotalValue = portfolio.cashUSD + btcValue + stockValue
-      setPortfolio(prev => ({ ...prev, totalValue: newTotalValue }))
-    }
-  }, [marketData, stockData, portfolio.btcHoldings, portfolio.stockHoldings, portfolio.cashUSD])
-
-  const executeTrade = (type, side, amountUSD, symbol = 'BTC') => {
-    if (type === 'crypto') {
-      if (!marketData) return false
-      const currentPrice = marketData.usd
-      const btcAmount = amountUSD / currentPrice
-      const fees = amountUSD * 0.005
-      const totalCost = amountUSD + fees
-
-      if (side === 'BUY') {
-        if (portfolio.cashUSD < totalCost) return false
-        const newTrade = {
-          id: Date.now(),
-          type: 'crypto',
-          side: 'BUY',
-          symbol: 'BTC',
-          amountUSD,
-          quantity: btcAmount,
-          price: currentPrice,
-          fees,
-          timestamp: new Date().toISOString(),
-          status: 'Executed',
-          storage: 'none'
-        }
-        setPortfolio(prev => ({
-          ...prev,
-          cashUSD: prev.cashUSD - totalCost,
-          btcHoldings: prev.btcHoldings + btcAmount,
-          costBasis: prev.costBasis + amountUSD,
-          trades: [newTrade, ...prev.trades]
-        }))
-        return true
-      } else if (side === 'SELL') {
-        if (portfolio.btcHoldings < btcAmount) return false
-        const newTrade = {
-          id: Date.now(),
-          type: 'crypto',
-          side: 'SELL',
-          symbol: 'BTC',
-          amountUSD,
-          quantity: btcAmount,
-          price: currentPrice,
-          fees,
-          timestamp: new Date().toISOString(),
-          status: 'Executed',
-          storage: 'none'
-        }
-        const netReceived = amountUSD - fees
-        const costBasisReduction = (btcAmount / portfolio.btcHoldings) * portfolio.costBasis
-        setPortfolio(prev => ({
-          ...prev,
-          cashUSD: prev.cashUSD + netReceived,
-          btcHoldings: prev.btcHoldings - btcAmount,
-          costBasis: prev.costBasis - costBasisReduction,
-          trades: [newTrade, ...prev.trades]
-        }))
-        return true
-      }
-    } else if (type === 'stock') {
-      const stockPrice = stockData[symbol]?.price
-      if (!stockPrice) return false
-      const shares = amountUSD / stockPrice
-      const fees = amountUSD * 0.005
-      const totalCost = amountUSD + fees
-
-      if (side === 'BUY') {
-        if (portfolio.cashUSD < totalCost) return false
-        const newTrade = {
-          id: Date.now(),
-          type: 'stock',
-          side: 'BUY',
-          symbol,
-          amountUSD,
-          quantity: shares,
-          price: stockPrice,
-          fees,
-          timestamp: new Date().toISOString(),
-          status: 'Executed',
-          storage: 'none'
-        }
-        setPortfolio(prev => ({
-          ...prev,
-          cashUSD: prev.cashUSD - totalCost,
-          stockHoldings: { ...prev.stockHoldings, [symbol]: (prev.stockHoldings[symbol] || 0) + shares },
-          stockCostBasis: { ...prev.stockCostBasis, [symbol]: (prev.stockCostBasis[symbol] || 0) + amountUSD },
-          trades: [newTrade, ...prev.trades]
-        }))
-        return true
-      } else if (side === 'SELL') {
-        if ((portfolio.stockHoldings[symbol] || 0) < shares) return false
-        const newTrade = {
-          id: Date.now(),
-          type: 'stock',
-          side: 'SELL',
-          symbol,
-          amountUSD,
-          quantity: shares,
-          price: stockPrice,
-          fees,
-          timestamp: new Date().toISOString(),
-          status: 'Executed',
-          storage: 'none'
-        }
-        const netReceived = amountUSD - fees
-        setPortfolio(prev => ({
-          ...prev,
-          cashUSD: prev.cashUSD + netReceived,
-          stockHoldings: { ...prev.stockHoldings, [symbol]: prev.stockHoldings[symbol] - shares },
-          trades: [newTrade, ...prev.trades]
-        }))
-        return true
-      }
-    }
-    return false
-  }
-
-  const transferToStorage = (tradeId, storageType) => {
-    const trade = portfolio.trades.find(t => t.id === tradeId)
-    if (!trade) return
+  // Enhanced execute trade function with custody prompt for BTC
+  const executeTrade = async (side, amount, asset = 'BTC') => {
+    if (!marketData && asset === 'BTC') return
     
-    setPortfolio(prev => {
-      const updatedTrades = prev.trades.map(t => t.id === tradeId ? { ...t, storage: storageType } : t)
-      
-      if (storageType === 'hot') {
-        return {
-          ...prev,
-          trades: updatedTrades,
-          hotStorage: { ...prev.hotStorage, trades: [...prev.hotStorage.trades, { ...trade, storage: storageType }] }
-        }
-      } else if (storageType === 'cold') {
-        return {
-          ...prev,
-          trades: updatedTrades,
-          coldStorage: { ...prev.coldStorage, pending: [...prev.coldStorage.pending, { ...trade, storage: storageType, multisigStatus: 'pending' }] }
-        }
+    const price = asset === 'BTC' ? marketData.usd : stockData[asset]?.usd
+    if (!price) return
+
+    const fee = amount * 0.005 // 0.5% fee
+    const netAmount = amount - fee
+
+    if (side === 'BUY') {
+      if (portfolio.cashUSD < amount) {
+        alert('Insufficient funds!')
+        return
       }
-      return { ...prev, trades: updatedTrades }
-    })
-    setShowTransferModal(false)
+
+      let assetAmount, newPortfolio
+
+      if (asset === 'BTC') {
+        assetAmount = netAmount / price
+        newPortfolio = {
+          ...portfolio,
+          cashUSD: portfolio.cashUSD - amount,
+          btcHoldings: portfolio.btcHoldings + assetAmount,
+          btcHoldingsHot: portfolio.btcHoldingsHot + assetAmount, // Initially goes to hot wallet
+          totalValue: portfolio.cashUSD - amount + (portfolio.btcHoldings + assetAmount) * price + calculateStockValue(),
+          costBasis: portfolio.costBasis + netAmount,
+          trades: [...portfolio.trades, {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            side,
+            asset,
+            amount: assetAmount,
+            priceUSD: price,
+            totalUSD: amount,
+            feeUSD: fee,
+            storage: 'hot' // Track storage location
+          }]
+        }
+
+        // Show custody prompt for BTC purchases
+        setPendingBtcTrade({
+          amount: assetAmount,
+          trade: newPortfolio.trades[newPortfolio.trades.length - 1]
+        })
+        setPortfolio(newPortfolio)
+        setShowCustodyPrompt(true)
+        
+      } else {
+        // Stock purchase
+        assetAmount = netAmount / price
+        const currentStock = portfolio.stocks[asset]
+        newPortfolio = {
+          ...portfolio,
+          cashUSD: portfolio.cashUSD - amount,
+          stocks: {
+            ...portfolio.stocks,
+            [asset]: {
+              shares: currentStock.shares + assetAmount,
+              costBasis: currentStock.costBasis + netAmount
+            }
+          },
+          totalValue: portfolio.cashUSD - amount + portfolio.btcHoldings * (marketData?.usd || 0) + calculateStockValue() + netAmount,
+          trades: [...portfolio.trades, {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            side,
+            asset,
+            amount: assetAmount,
+            priceUSD: price,
+            totalUSD: amount,
+            feeUSD: fee
+          }]
+        }
+        setPortfolio(newPortfolio)
+      }
+
+    } else { // SELL
+      if (asset === 'BTC') {
+        const availableBTC = portfolio.btcHoldingsHot // Can only sell from hot wallet
+        const btcToSell = netAmount / price
+        
+        if (availableBTC < btcToSell) {
+          // Check if user has BTC in cold storage
+          if (portfolio.btcHoldingsCold > 0) {
+            alert(`Insufficient BTC in hot wallet! You have ${portfolio.btcHoldingsCold.toFixed(6)} BTC in cold storage. Please transfer to hot wallet first via multisig process.`)
+          } else {
+            alert('Insufficient BTC in hot wallet!')
+          }
+          return
+        }
+
+        const newPortfolio = {
+          ...portfolio,
+          cashUSD: portfolio.cashUSD + netAmount,
+          btcHoldings: portfolio.btcHoldings - btcToSell,
+          btcHoldingsHot: portfolio.btcHoldingsHot - btcToSell,
+          totalValue: portfolio.cashUSD + netAmount + (portfolio.btcHoldings - btcToSell) * price + calculateStockValue(),
+          trades: [...portfolio.trades, {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            side,
+            asset,
+            amount: btcToSell,
+            priceUSD: price,
+            totalUSD: amount,
+            feeUSD: fee,
+            storage: 'hot'
+          }]
+        }
+        setPortfolio(newPortfolio)
+        
+      } else {
+        // Stock sale
+        const currentStock = portfolio.stocks[asset]
+        const sharesToSell = netAmount / price
+        
+        if (currentStock.shares < sharesToSell) {
+          alert(`Insufficient ${asset} shares!`)
+          return
+        }
+
+        const newPortfolio = {
+          ...portfolio,
+          cashUSD: portfolio.cashUSD + netAmount,
+          stocks: {
+            ...portfolio.stocks,
+            [asset]: {
+              shares: currentStock.shares - sharesToSell,
+              costBasis: Math.max(0, currentStock.costBasis - (currentStock.costBasis * (sharesToSell / currentStock.shares)))
+            }
+          },
+          totalValue: portfolio.cashUSD + netAmount + portfolio.btcHoldings * (marketData?.usd || 0) + calculateStockValue() - netAmount,
+          trades: [...portfolio.trades, {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            side,
+            asset,
+            amount: sharesToSell,
+            priceUSD: price,
+            totalUSD: amount,
+            feeUSD: fee
+          }]
+        }
+        setPortfolio(newPortfolio)
+      }
+    }
+
+    updateUnrealizedPL()
   }
 
-  const simulateMultisig = (tradeId) => {
-    setPortfolio(prev => {
-      const pendingTrade = prev.coldStorage.pending.find(t => t.id === tradeId)
-      if (!pendingTrade) return prev
-      return {
-        ...prev,
-        coldStorage: {
-          ...prev.coldStorage,
-          pending: prev.coldStorage.pending.filter(t => t.id !== tradeId),
-          trades: [...prev.coldStorage.trades, { ...pendingTrade, multisigStatus: 'confirmed' }]
-        }
+  // Handle custody decision for BTC
+  const handleCustodyDecision = (moveToCold) => {
+    if (!pendingBtcTrade) return
+
+    if (moveToCold) {
+      // Move BTC to cold storage
+      const newPortfolio = {
+        ...portfolio,
+        btcHoldingsHot: portfolio.btcHoldingsHot - pendingBtcTrade.amount,
+        btcHoldingsCold: portfolio.btcHoldingsCold + pendingBtcTrade.amount
+      }
+      
+      const newColdStorage = {
+        ...coldStorage,
+        totalBTC: coldStorage.totalBTC + pendingBtcTrade.amount,
+        transactions: [...coldStorage.transactions, {
+          id: Date.now(),
+          timestamp: new Date().toISOString(),
+          type: 'deposit',
+          amount: pendingBtcTrade.amount,
+          tradeId: pendingBtcTrade.trade.id,
+          status: 'completed'
+        }]
+      }
+      
+      setPortfolio(newPortfolio)
+      setColdStorage(newColdStorage)
+    }
+    // If no, BTC stays in hot wallet (default)
+    
+    setShowCustodyPrompt(false)
+    setPendingBtcTrade(null)
+  }
+
+  // Start multisig process to move BTC from cold to hot
+  const startMultisigTransfer = (amount) => {
+    if (coldStorage.totalBTC < amount) {
+      alert('Insufficient BTC in cold storage!')
+      return
+    }
+    
+    setSelectedTrade({ amount, type: 'cold-to-hot' })
+    setMultisigStep(0)
+    setShowMultisigModal(true)
+    
+    // Reset signer statuses
+    const resetSigners = coldStorage.multisigConfig.signers.map(signer => ({
+      ...signer,
+      status: 'pending'
+    }))
+    
+    setColdStorage({
+      ...coldStorage,
+      multisigConfig: {
+        ...coldStorage.multisigConfig,
+        signers: resetSigners
       }
     })
+  }
+
+  // Process multisig signature
+  const processMultisigSignature = () => {
+    const signers = [...coldStorage.multisigConfig.signers]
+    const pendingSigner = signers.find(s => s.status === 'pending')
+    
+    if (pendingSigner) {
+      pendingSigner.status = 'signed'
+      
+      setColdStorage({
+        ...coldStorage,
+        multisigConfig: {
+          ...coldStorage.multisigConfig,
+          signers
+        }
+      })
+      
+      const signedCount = signers.filter(s => s.status === 'signed').length
+      
+      if (signedCount >= coldStorage.multisigConfig.requiredSignatures) {
+        // Transfer approved
+        setTimeout(() => {
+          completeMultisigTransfer()
+        }, 1000)
+      } else {
+        setMultisigStep(multisigStep + 1)
+      }
+    }
+  }
+
+  // Complete the multisig transfer
+  const completeMultisigTransfer = () => {
+    if (!selectedTrade) return
+    
+    const transferAmount = selectedTrade.amount
+    
+    const newPortfolio = {
+      ...portfolio,
+      btcHoldingsHot: portfolio.btcHoldingsHot + transferAmount,
+      btcHoldingsCold: portfolio.btcHoldingsCold - transferAmount
+    }
+    
+    const newColdStorage = {
+      ...coldStorage,
+      totalBTC: coldStorage.totalBTC - transferAmount,
+      transactions: [...coldStorage.transactions, {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        type: 'withdrawal',
+        amount: transferAmount,
+        status: 'completed',
+        multisigApproved: true
+      }]
+    }
+    
+    setPortfolio(newPortfolio)
+    setColdStorage(newColdStorage)
+    setShowMultisigModal(false)
+    setSelectedTrade(null)
+    setMultisigStep(0)
+  }
+
+  const calculateStockValue = () => {
+    return Object.keys(portfolio.stocks).reduce((total, symbol) => {
+      const stock = portfolio.stocks[symbol]
+      const price = stockData[symbol]?.usd || 0
+      return total + (stock.shares * price)
+    }, 0)
+  }
+
+  const updateUnrealizedPL = () => {
+    if (!marketData) return
+    const currentBtcValue = portfolio.btcHoldings * marketData.usd
+    const stockValue = calculateStockValue()
+    const stockCostBasis = Object.values(portfolio.stocks).reduce((total, stock) => total + stock.costBasis, 0)
+    
+    const newUnrealizedPL = (currentBtcValue - portfolio.costBasis) + (stockValue - stockCostBasis)
+    const newTotalValue = portfolio.cashUSD + currentBtcValue + stockValue
+    
+    setPortfolio(prev => ({
+      ...prev,
+      unrealizedPL: newUnrealizedPL,
+      totalValue: newTotalValue
+    }))
+  }
+
+  useEffect(() => {
+    updateUnrealizedPL()
+  }, [marketData, stockData])
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
   }
 
   const resetDemo = () => {
     const initialPortfolio = {
-      cashUSD: 10000000,
+      cashUSD: 1000000,
       btcHoldings: 0,
-      stockHoldings: { MSTR: 0, STRC: 0, STRK: 0, STRF: 0, STRD: 0 },
-      totalValue: 10000000,
+      btcHoldingsHot: 0,
+      btcHoldingsCold: 0,
+      totalValue: 1000000,
       unrealizedPL: 0,
       costBasis: 0,
-      stockCostBasis: {},
       trades: [],
-      hotStorage: { btc: 0, stocks: {}, trades: [] },
-      coldStorage: { btc: 0, stocks: {}, trades: [], pending: [] }
+      stocks: {
+        MSTR: { shares: 0, costBasis: 0 },
+        STRE: { shares: 0, costBasis: 0 },
+        STRK: { shares: 0, costBasis: 0 },
+        STRF: { shares: 0, costBasis: 0 },
+        STRD: { shares: 0, costBasis: 0 }
+      }
     }
+    
+    const initialColdStorage = {
+      totalBTC: 0,
+      transactions: [],
+      multisigConfig: {
+        requiredSignatures: 3,
+        totalSigners: 5,
+        signers: [
+          { name: 'Treasury Lead', status: 'pending' },
+          { name: 'CFO', status: 'pending' },
+          { name: 'Security Officer', status: 'pending' },
+          { name: 'Compliance', status: 'pending' },
+          { name: 'CEO', status: 'pending' }
+        ]
+      }
+    }
+    
     setPortfolio(initialPortfolio)
-    localStorage.setItem('foresight-portfolio', JSON.stringify(initialPortfolio))
+    setColdStorage(initialColdStorage)
     setShowUserMenu(false)
-  }
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
-  }
-
-  return (
-    <>
+  }  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 50%, #a7f3d0 100%)',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      position: 'relative'
+    }}>
       <Head>
         <title>Foresight Enterprise™ - Bitcoin Treasury Management</title>
-        <meta name="description" content="Professional Bitcoin & Leveraged Stock Trading Platform" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        <meta name="description" content="Enterprise Bitcoin Treasury Management Platform" />
       </Head>
 
+      {/* Animated Background */}
       <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #F0FDFA 0%, #ECFDF5 25%, #F0FDF4 50%, #CCFBF1 75%, #A7F3D0 100%)',
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-        color: '#0F172A',
-        position: 'relative'
-      }}>        {/* Animated Background */}
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        zIndex: 1,
+        overflow: 'hidden',
+        pointerEvents: 'none'
+      }}>
+        <div style={{
+          position: 'absolute',
+          width: '100%',
+          height: '100%',
+          background: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306B6D4' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          animation: 'float 20s ease-in-out infinite'
+        }} />
+        
+        {[...Array(6)].map((_, i) => (
+          <div key={i} style={{
+            position: 'absolute',
+            width: `${100 + i * 50}px`,
+            height: `${100 + i * 50}px`,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, rgba(6, 182, 212, ${0.1 - i * 0.01}) 0%, transparent 70%)`,
+            left: `${10 + i * 15}%`,
+            top: `${20 + i * 10}%`,
+            animation: `pulse ${3 + i}s ease-in-out infinite alternate`
+          }} />
+        ))}
+      </div>
+
+      {/* Main Container */}
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        {/* Header */}
+        <header style={{
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(6, 182, 212, 0.2)',
+          padding: '16px 32px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            maxWidth: '1400px',
+            margin: '0 auto'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '20px'
+              }}>F</div>
+              <div>
+                <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#0f172a' }}>
+                  Foresight Enterprise™
+                </h1>
+                <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>by Foresight Capital</p>
+              </div>
+            </div>
+
+            <nav style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
+              {[
+                { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+                { id: 'trade', label: 'Trading', icon: '💹' },
+                { id: 'custody', label: 'Custody', icon: '🔐' },
+                { id: 'reporting', label: 'Reports', icon: '📋' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    background: activeTab === tab.id ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' : 'transparent',
+                    color: activeTab === tab.id ? 'white' : '#64748b',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    fontSize: '16px'
+                  }}
+                >
+                  <span style={{ marginRight: '8px' }}>
+                    {activeTab === tab.id ? '●' : '○'}
+                  </span>
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                  border: 'none',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                TC
+              </button>
+
+              {showUserMenu && (
+                <div style={{
+                  position: 'absolute',
+                  top: '60px',
+                  right: 0,
+                  background: 'rgba(255, 255, 255, 0.98)',
+                  backdropFilter: 'blur(20px)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(6, 182, 212, 0.2)',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+                  padding: '16px',
+                  minWidth: '200px',
+                  zIndex: 20
+                }}>
+                  <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(6, 182, 212, 0.1)' }}>
+                    <div style={{ fontWeight: '600', color: '#0f172a' }}>Treasury Corp</div>
+                    <div style={{ fontSize: '14px', color: '#64748b' }}>treasury@corp.com</div>
+                  </div>
+                  
+                  <button
+                    onClick={() => setActiveTab('company')}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      borderRadius: '8px',
+                      transition: 'background 0.2s',
+                      color: '#374151'
+                    }}
+                    onMouseOver={(e) => e.target.style.background = 'rgba(6, 182, 212, 0.1)'}
+                    onMouseOut={(e) => e.target.style.background = 'none'}
+                  >
+                    Company Profile
+                  </button>
+                  
+                  <button
+                    onClick={() => setActiveTab('privacy')}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      borderRadius: '8px',
+                      transition: 'background 0.2s',
+                      color: '#374151'
+                    }}
+                    onMouseOver={(e) => e.target.style.background = 'rgba(6, 182, 212, 0.1)'}
+                    onMouseOut={(e) => e.target.style.background = 'none'}
+                  >
+                    Privacy Policy
+                  </button>
+                  
+                  <button
+                    onClick={() => setActiveTab('terms')}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      borderRadius: '8px',
+                      transition: 'background 0.2s',
+                      color: '#374151'
+                    }}
+                    onMouseOver={(e) => e.target.style.background = 'rgba(6, 182, 212, 0.1)'}
+                    onMouseOut={(e) => e.target.style.background = 'none'}
+                  >
+                    Terms & Conditions
+                  </button>
+                  
+                  <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid rgba(6, 182, 212, 0.1)' }} />
+                  
+                  <button
+                    onClick={resetDemo}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      borderRadius: '8px',
+                      transition: 'background 0.2s',
+                      color: '#dc2626',
+                      fontWeight: '600'
+                    }}
+                    onMouseOver={(e) => e.target.style.background = 'rgba(220, 38, 38, 0.1)'}
+                    onMouseOut={(e) => e.target.style.background = 'none'}
+                  >
+                    Reset Demo
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
+          {activeTab === 'dashboard' && (
+            <Dashboard 
+              marketData={marketData}
+              stockData={stockData}
+              loading={loading}
+              portfolio={portfolio}
+              coldStorage={coldStorage}
+              onPortfolioClick={() => setShowPortfolioDetail(true)}
+              formatCurrency={formatCurrency}
+            />
+          )}
+
+          {activeTab === 'trade' && (
+            <TradingInterface
+              marketData={marketData}
+              stockData={stockData}
+              loading={loading}
+              portfolio={portfolio}
+              executeTrade={executeTrade}
+              formatCurrency={formatCurrency}
+            />
+          )}
+
+          {activeTab === 'custody' && (
+            <CustodyInterface
+              portfolio={portfolio}
+              coldStorage={coldStorage}
+              marketData={marketData}
+              onTransferRequest={startMultisigTransfer}
+              formatCurrency={formatCurrency}
+            />
+          )}
+
+          {activeTab === 'reporting' && <ReportingInterface portfolio={portfolio} formatCurrency={formatCurrency} />}
+          {activeTab === 'company' && <CompanyProfile />}
+          {activeTab === 'privacy' && <PrivacyPolicy />}
+          {activeTab === 'terms' && <TermsConditions />}
+        </main>
+      </div>
+
+      {/* BTC Custody Prompt Modal */}
+      {showCustodyPrompt && pendingBtcTrade && (
         <div style={{
           position: 'fixed',
           top: 0,
           left: 0,
           width: '100%',
           height: '100%',
-          zIndex: 1,
-          overflow: 'hidden',
-          pointerEvents: 'none'
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
         }}>
           <div style={{
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-            background: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306B6D4' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            animation: 'float 20s linear infinite'
-          }}></div>
-          
-          <div style={{
-            position: 'absolute',
-            top: '10%',
-            left: '20%',
-            width: '300px',
-            height: '300px',
-            background: 'radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 70%)',
-            borderRadius: '50%',
-            animation: 'pulse 4s ease-in-out infinite'
-          }}></div>
-          <div style={{
-            position: 'absolute',
-            bottom: '20%',
-            right: '10%',
-            width: '200px',
-            height: '200px',
-            background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%)',
-            borderRadius: '50%',
-            animation: 'pulse 6s ease-in-out infinite reverse'
-          }}></div>
-        </div>
-
-        {/* Header */}
-        <header style={{
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(6, 182, 212, 0.1)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-        }}>
-          <div style={{
-            maxWidth: '1400px',
-            margin: '0 auto',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            height: '80px',
-            padding: '0 40px'
+            background: 'white',
+            borderRadius: '24px',
+            padding: '48px',
+            maxWidth: '500px',
+            textAlign: 'center',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.2)'
           }}>
-            {/* Logo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                background: 'linear-gradient(135deg, #06B6D4 0%, #10B981 50%, #22C55E 100%)',
-                borderRadius: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '24px',
-                fontWeight: '900',
-                boxShadow: '0 8px 32px rgba(6, 182, 212, 0.3)',
-                cursor: 'pointer',
-                transition: 'transform 0.2s ease'
-              }}>
-                ₿
-              </div>
-              <div>
-                <h1 style={{
-                  fontSize: '28px',
-                  fontWeight: '800',
-                  margin: 0,
-                  background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  letterSpacing: '-0.02em'
-                }}>
-                  Foresight Enterprise™
-                </h1>
-                <p style={{
-                  fontSize: '14px',
-                  color: '#64748B',
-                  margin: 0,
-                  fontWeight: '600',
-                  letterSpacing: '0.01em'
-                }}>
-                  Professional Trading Platform
-                </p>
-              </div>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px',
+              fontSize: '36px'
+            }}>
+              🔐
             </div>
             
-            {/* Navigation */}
-            <div style={{
-              display: 'flex',
-              background: 'rgba(255, 255, 255, 0.8)',
-              borderRadius: '20px',
-              padding: '6px',
-              border: '1px solid rgba(6, 182, 212, 0.15)',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
-            }}>
-              {[
-                { id: 'dashboard', name: 'Portfolio' },
-                { id: 'trade', name: 'Trading' },
-                { id: 'custody', name: 'Custody' },
-                { id: 'reporting', name: 'Reports' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '12px 24px',
-                    borderRadius: '16px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    background: activeTab === tab.id 
-                      ? 'linear-gradient(135deg, #06B6D4 0%, #10B981 100%)'
-                      : 'transparent',
-                    color: activeTab === tab.id ? '#FFFFFF' : '#64748B',
-                    fontWeight: activeTab === tab.id ? '700' : '600',
-                    fontSize: '14px',
-                    letterSpacing: '0.01em',
-                    boxShadow: activeTab === tab.id 
-                      ? '0 4px 20px rgba(6, 182, 212, 0.3)' 
-                      : 'none',
-                    transform: activeTab === tab.id ? 'translateY(-1px)' : 'translateY(0)'
-                  }}
-                >
-                  <div style={{
-                    width: '16px',
-                    height: '16px',
-                    background: activeTab === tab.id ? '#FFFFFF' : '#94A3B8',
-                    borderRadius: '4px'
-                  }}></div>
-                  <span>{tab.name}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* User Section */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-              {/* Live Status */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                background: 'rgba(16, 185, 129, 0.1)',
-                borderRadius: '20px',
-                border: '1px solid rgba(16, 185, 129, 0.2)'
-              }}>
-                <div style={{
-                  width: '8px',
-                  height: '8px',
-                  background: '#10B981',
-                  borderRadius: '50%',
-                  animation: 'pulse 2s infinite'
-                }}></div>
-                <span style={{
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: '#10B981',
-                  letterSpacing: '0.02em'
-                }}>
-                  LIVE TRADING
-                </span>
-              </div>
-              
-              {/* User Avatar */}
-              <div style={{ position: 'relative' }}>
-                <div 
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    background: 'linear-gradient(135deg, #06B6D4 0%, #8B5CF6 100%)',
-                    borderRadius: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontWeight: '700',
-                    fontSize: '16px',
-                    boxShadow: '0 8px 32px rgba(6, 182, 212, 0.3)',
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s ease',
-                    position: 'relative'
-                  }}
-                >
-                  TC
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '-2px',
-                    right: '-2px',
-                    width: '16px',
-                    height: '16px',
-                    background: '#10B981',
-                    borderRadius: '50%',
-                    border: '3px solid #FFFFFF'
-                  }}></div>
-                </div>
-
-                {/* User Menu Dropdown */}
-                {showUserMenu && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '60px',
-                    right: 0,
-                    width: '280px',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(20px)',
-                    borderRadius: '16px',
-                    border: '1px solid rgba(6, 182, 212, 0.1)',
-                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
-                    padding: '20px',
-                    zIndex: 200
-                  }}>
-                    <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0F172A' }}>Treasury Admin</h3>
-                      <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748B' }}>Foresight Capital</p>
-                    </div>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <button 
-                        onClick={() => {setActiveTab('company'); setShowUserMenu(false)}}
-                        style={{
-                          padding: '12px 16px',
-                          background: 'transparent',
-                          border: 'none',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          color: '#374151'
-                        }}
-                      >
-                        🏢 Company Information
-                      </button>
-                      
-                      <button 
-                        onClick={() => {setActiveTab('terms'); setShowUserMenu(false)}}
-                        style={{
-                          padding: '12px 16px',
-                          background: 'transparent',
-                          border: 'none',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          color: '#374151'
-                        }}
-                      >
-                        📋 Terms & Conditions
-                      </button>
-                      
-                      <button 
-                        onClick={() => {setActiveTab('privacy'); setShowUserMenu(false)}}
-                        style={{
-                          padding: '12px 16px',
-                          background: 'transparent',
-                          border: 'none',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          color: '#374151'
-                        }}
-                      >
-                        🔒 Privacy Policy
-                      </button>
-                      
-                      <div style={{ height: '1px', background: 'rgba(6, 182, 212, 0.2)', margin: '8px 0' }}></div>
-                      
-                      <button 
-                        onClick={resetDemo}
-                        style={{
-                          padding: '12px 16px',
-                          background: 'rgba(239, 68, 68, 0.1)',
-                          border: '1px solid rgba(239, 68, 68, 0.2)',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          fontSize: '14px',
-                          fontWeight: '700',
-                          color: '#EF4444'
-                        }}
-                      >
-                        🔄 Reset Demo
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Transfer Modal */}
-        {showTransferModal && selectedTrade && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            background: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 300,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.95)',
-              borderRadius: '24px',
-              padding: '32px',
-              maxWidth: '500px',
-              width: '90%',
-              border: '1px solid rgba(6, 182, 212, 0.1)',
-              backdropFilter: 'blur(20px)'
-            }}>
-              <h3 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '20px', color: '#0F172A' }}>
-                Transfer to Storage
-              </h3>
-              <p style={{ color: '#64748B', marginBottom: '24px' }}>
-                Choose storage type for your {selectedTrade.symbol} trade:
-              </p>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
-                <button 
-                  onClick={() => transferToStorage(selectedTrade.id, 'hot')}
-                  style={{
-                    padding: '20px',
-                    background: 'rgba(245, 158, 11, 0.1)',
-                    border: '2px solid rgba(245, 158, 11, 0.2)',
-                    borderRadius: '16px',
-                    cursor: 'pointer',
-                    textAlign: 'left'
-                  }}
-                >
-                  <div style={{ fontSize: '20px', marginBottom: '8px' }}>🔥</div>
-                  <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#F59E0B' }}>Hot Storage</h4>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#92400E' }}>
-                    Instant access for high-frequency trading
-                  </p>
-                </button>
-                
-                <button 
-                  onClick={() => transferToStorage(selectedTrade.id, 'cold')}
-                  style={{
-                    padding: '20px',
-                    background: 'rgba(59, 130, 246, 0.1)',
-                    border: '2px solid rgba(59, 130, 246, 0.2)',
-                    borderRadius: '16px',
-                    cursor: 'pointer',
-                    textAlign: 'left'
-                  }}
-                >
-                  <div style={{ fontSize: '20px', marginBottom: '8px' }}>❄️</div>
-                  <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#3B82F6' }}>Cold Storage</h4>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#1E40AF' }}>
-                    Maximum security with multi-signature protection
-                  </p>
-                </button>
-              </div>
-              
-              <button 
-                onClick={() => setShowTransferModal(false)}
+            <h2 style={{ color: '#0f172a', marginBottom: '16px', fontSize: '24px' }}>
+              Bitcoin Purchase Complete
+            </h2>
+            
+            <p style={{ color: '#64748b', marginBottom: '32px', lineHeight: '1.6' }}>
+              You've successfully purchased <strong>{pendingBtcTrade.amount.toFixed(6)} BTC</strong>.
+              <br />Where would you like to store your Bitcoin?
+            </p>
+            
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+              <button
+                onClick={() => handleCustodyDecision(false)}
                 style={{
-                  width: '100%',
-                  padding: '12px',
-                  background: 'rgba(107, 114, 128, 0.1)',
-                  border: '1px solid rgba(107, 114, 128, 0.2)',
+                  padding: '16px 32px',
+                  background: 'rgba(6, 182, 212, 0.1)',
+                  border: '2px solid #06b6d4',
                   borderRadius: '12px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
+                  color: '#06b6d4',
                   fontWeight: '600',
-                  color: '#6B7280'
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
                 }}
               >
-                Cancel
+                🔥 Hot Wallet
+                <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '4px' }}>
+                  Ready for trading
+                </div>
+              </button>
+              
+              <button
+                onClick={() => handleCustodyDecision(true)}
+                style={{
+                  padding: '16px 32px',
+                  background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: 'white',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                ❄️ Cold Storage
+                <div style={{ fontSize: '12px', opacity: 0.9, marginTop: '4px' }}>
+                  Maximum security
+                </div>
               </button>
             </div>
           </div>
-        )}
-
-        {/* Portfolio Detail Modal */}
-        {showPortfolioDetail && (
-          <PortfolioDetailModal 
-            portfolio={portfolio} 
-            marketData={marketData} 
-            stockData={stockData}
-            onClose={() => setShowPortfolioDetail(false)}
-            formatCurrency={formatCurrency}
-          />
-        )}
-
-        {/* Main Content */}
-        <main style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          padding: '40px',
-          minHeight: 'calc(100vh - 80px)',
-          position: 'relative',
-          zIndex: 10
-        }}>
-          {activeTab === 'dashboard' && (
-            <Dashboard 
-              marketData={marketData} 
-              stockData={stockData}
-              loading={loading} 
-              portfolio={portfolio} 
-              onPortfolioClick={() => setShowPortfolioDetail(true)}
-              onTransferClick={(trade) => {
-                setSelectedTrade(trade)
-                setShowTransferModal(true)
-              }}
-              formatCurrency={formatCurrency}
-            />
-          )}
-          {activeTab === 'trade' && (
-            <Trading 
-              marketData={marketData} 
-              stockData={stockData}
-              portfolio={portfolio} 
-              executeTrade={executeTrade}
-              formatCurrency={formatCurrency}
-            />
-          )}
-          {activeTab === 'custody' && (
-            <Custody 
-              portfolio={portfolio} 
-              onMultisigApprove={simulateMultisig}
-              formatCurrency={formatCurrency}
-            />
-          )}
-          {activeTab === 'reporting' && <Reporting portfolio={portfolio} formatCurrency={formatCurrency} />}
-          {activeTab === 'company' && <CompanyInfo />}
-          {activeTab === 'terms' && <Terms />}
-          {activeTab === 'privacy' && <Privacy />}
-        </main>
-      </div>
-
-      <style jsx global>{`
-        * { box-sizing: border-box; }
-        body { margin: 0; padding: 0; font-smoothing: antialiased; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.05); } }
-        @keyframes float { 0%, 100% { transform: translateY(0px) translateX(0px); } 33% { transform: translateY(-20px) translateX(10px); } 66% { transform: translateY(10px) translateX(-5px); } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        .slide-up { animation: slideUp 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-        .hover-lift { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15); }
-      `}</style>
-    </>
-  )
-}
-
-// Portfolio Detail Modal Component
-function PortfolioDetailModal({ portfolio, marketData, stockData, onClose, formatCurrency }) {
-  const btcValue = portfolio.btcHoldings * (marketData?.usd || 0)
-
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      background: 'rgba(0, 0, 0, 0.5)',
-      zIndex: 300,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }}>
-      <div style={{
-        background: 'rgba(255, 255, 255, 0.95)',
-        borderRadius: '24px',
-        padding: '32px',
-        maxWidth: '600px',
-        width: '90%',
-        maxHeight: '80vh',
-        overflow: 'auto',
-        border: '1px solid rgba(6, 182, 212, 0.1)',
-        backdropFilter: 'blur(20px)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#0F172A' }}>
-            Portfolio Breakdown
-          </h3>
-          <button 
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#6B7280' }}
-          >
-            ×
-          </button>
         </div>
+      )}
 
+      {/* Multisig Transfer Modal */}
+      {showMultisigModal && (
         <div style={{
-          background: 'rgba(6, 182, 212, 0.05)',
-          borderRadius: '16px',
-          padding: '24px',
-          marginBottom: '24px',
-          border: '1px solid rgba(6, 182, 212, 0.1)'
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
         }}>
-          <h4 style={{ fontSize: '16px', color: '#64748B', margin: '0 0 8px 0' }}>Total Portfolio Value</h4>
-          <div style={{ fontSize: '36px', fontWeight: '900', color: '#0F172A' }}>
-            {formatCurrency(portfolio.totalValue)}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '16px',
-            background: 'rgba(16, 185, 129, 0.05)',
-            borderRadius: '12px',
-            border: '1px solid rgba(16, 185, 129, 0.1)'
+            background: 'white',
+            borderRadius: '24px',
+            padding: '48px',
+            maxWidth: '600px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto'
           }}>
-            <div>
-              <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>Cash (USD)</h5>
-              <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748B' }}>Available for trading</p>
+            <h2 style={{ color: '#0f172a', marginBottom: '24px', textAlign: 'center' }}>
+              Multisig Authorization Required
+            </h2>
+            
+            <div style={{ marginBottom: '32px', textAlign: 'center' }}>
+              <p style={{ color: '#64748b', marginBottom: '16px' }}>
+                Transferring <strong>{selectedTrade?.amount.toFixed(6)} BTC</strong> from Cold Storage to Hot Wallet
+              </p>
+              <p style={{ color: '#64748b', fontSize: '14px' }}>
+                Requires {coldStorage.multisigConfig.requiredSignatures} of {coldStorage.multisigConfig.totalSigners} signatures
+              </p>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '20px', fontWeight: '800', color: '#10B981' }}>
-                {formatCurrency(portfolio.cashUSD)}
-              </div>
-              <div style={{ fontSize: '12px', color: '#64748B' }}>
-                {((portfolio.cashUSD / portfolio.totalValue) * 100).toFixed(1)}%
-              </div>
-            </div>
-          </div>
 
-          {portfolio.btcHoldings > 0 && (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px',
-              background: 'rgba(245, 158, 11, 0.05)',
-              borderRadius: '12px',
-              border: '1px solid rgba(245, 158, 11, 0.1)'
-            }}>
-              <div>
-                <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>Bitcoin</h5>
-                <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748B' }}>
-                  {portfolio.btcHoldings.toFixed(6)} BTC
-                </p>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '20px', fontWeight: '800', color: '#F59E0B' }}>
-                  {formatCurrency(btcValue)}
+            <div style={{ marginBottom: '32px' }}>
+              {coldStorage.multisigConfig.signers.map((signer, index) => (
+                <div key={index} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '16px',
+                  background: signer.status === 'signed' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(6, 182, 212, 0.05)',
+                  borderRadius: '12px',
+                  marginBottom: '8px',
+                  border: signer.status === 'signed' ? '1px solid #22c55e' : '1px solid rgba(6, 182, 212, 0.2)'
+                }}>
+                  <span style={{ fontWeight: '600', color: '#0f172a' }}>{signer.name}</span>
+                  <span style={{
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    background: signer.status === 'signed' ? '#22c55e' : '#f59e0b',
+                    color: 'white'
+                  }}>
+                    {signer.status === 'signed' ? '✓ Signed' : '⏳ Pending'}
+                  </span>
                 </div>
-                <div style={{ fontSize: '12px', color: '#64748B' }}>
-                  {((btcValue / portfolio.totalValue) * 100).toFixed(1)}%
-                </div>
-              </div>
+              ))}
             </div>
-          )}
 
-          {Object.entries(portfolio.stockHoldings).map(([symbol, shares]) => {
-            if (shares <= 0) return null
-            const value = shares * (stockData[symbol]?.price || 0)
-            return (
-              <div key={symbol} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '16px',
-                background: 'rgba(139, 92, 246, 0.05)',
-                borderRadius: '12px',
-                border: '1px solid rgba(139, 92, 246, 0.1)'
-              }}>
+            <div style={{ textAlign: 'center' }}>
+              {coldStorage.multisigConfig.signers.filter(s => s.status === 'signed').length >= coldStorage.multisigConfig.requiredSignatures ? (
                 <div>
-                  <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>{symbol}</h5>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748B' }}>
-                    {shares.toFixed(2)} shares @ {formatCurrency(stockData[symbol]?.price || 0)}
+                  <div style={{ color: '#22c55e', marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>
+                    ✓ Transfer Approved!
+                  </div>
+                  <p style={{ color: '#64748b', fontSize: '14px' }}>
+                    Bitcoin will be transferred to your hot wallet momentarily...
                   </p>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#8B5CF6' }}>
-                    {formatCurrency(value)}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#64748B' }}>
-                    {((value / portfolio.totalValue) * 100).toFixed(1)}%
-                  </div>
+              ) : (
+                <button
+                  onClick={processMultisigSignature}
+                  disabled={!coldStorage.multisigConfig.signers.some(s => s.status === 'pending')}
+                  style={{
+                    padding: '16px 32px',
+                    background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: 'white',
+                    fontWeight: '600',
+                    cursor: coldStorage.multisigConfig.signers.some(s => s.status === 'pending') ? 'pointer' : 'not-allowed',
+                    opacity: coldStorage.multisigConfig.signers.some(s => s.status === 'pending') ? 1 : 0.5,
+                    fontSize: '16px'
+                  }}
+                >
+                  Sign Authorization ({coldStorage.multisigConfig.signers.filter(s => s.status === 'signed').length}/{coldStorage.multisigConfig.requiredSignatures})
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Portfolio Detail Modal */}
+      {showPortfolioDetail && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '24px',
+            padding: '48px',
+            maxWidth: '800px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+              <h2 style={{ color: '#0f172a', margin: 0 }}>Portfolio Breakdown</h2>
+              <button
+                onClick={() => setShowPortfolioDetail(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#64748b'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(8, 145, 178, 0.1) 100%)',
+                borderRadius: '16px',
+                padding: '24px',
+                border: '1px solid rgba(6, 182, 212, 0.2)'
+              }}>
+                <h3 style={{ color: '#0f172a', marginBottom: '16px' }}>Cash Holdings</h3>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#06b6d4' }}>
+                  {formatCurrency(portfolio.cashUSD)}
                 </div>
               </div>
-            )
-          })}
+
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.1) 0%, rgba(251, 113, 133, 0.1) 100%)',
+                borderRadius: '16px',
+                padding: '24px',
+                border: '1px solid rgba(251, 146, 60, 0.2)'
+              }}>
+                <h3 style={{ color: '#0f172a', marginBottom: '16px' }}>Bitcoin - Hot Wallet</h3>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#f59e0b' }}>
+                  {portfolio.btcHoldingsHot.toFixed(6)} BTC
+                </div>
+                <div style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>
+                  {formatCurrency(portfolio.btcHoldingsHot * (marketData?.usd || 0))}
+                </div>
+              </div>
+
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%)',
+                borderRadius: '16px',
+                padding: '24px',
+                border: '1px solid rgba(59, 130, 246, 0.2)'
+              }}>
+                <h3 style={{ color: '#0f172a', marginBottom: '16px' }}>Bitcoin - Cold Storage</h3>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#3b82f6' }}>
+                  {portfolio.btcHoldingsCold.toFixed(6)} BTC
+                </div>
+                <div style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>
+                  {formatCurrency(portfolio.btcHoldingsCold * (marketData?.usd || 0))}
+                </div>
+              </div>
+
+              {Object.entries(portfolio.stocks).map(([symbol, stock]) => (
+                stock.shares > 0 && (
+                  <div key={symbol} style={{
+                    background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%)',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    border: '1px solid rgba(34, 197, 94, 0.2)'
+                  }}>
+                    <h3 style={{ color: '#0f172a', marginBottom: '16px' }}>{symbol} Stock</h3>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#22c55e' }}>
+                      {stock.shares.toFixed(2)} shares
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>
+                      {formatCurrency(stock.shares * (stockData[symbol]?.usd || 0))}
+                    </div>
+                  </div>
+                )
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(180deg); }
+        }
+        
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 0.7; }
+          100% { transform: scale(1.1); opacity: 0.3; }
+        }
+        
+        .slide-up {
+          animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   )
 }// Dashboard Component
-function Dashboard({ marketData, stockData, loading, portfolio, onPortfolioClick, onTransferClick, formatCurrency }) {
+function Dashboard({ marketData, stockData, loading, portfolio, coldStorage, onPortfolioClick, formatCurrency }) {
   const formatBTC = (amount) => amount.toFixed(6) + ' BTC'
   const allocationPercentage = portfolio.totalValue > 0 ? ((portfolio.btcHoldings * (marketData?.usd || 0)) / portfolio.totalValue * 100) : 0
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
+        <div style={{
+          width: '48px',
+          height: '48px',
+          border: '4px solid rgba(6, 182, 212, 0.2)',
+          borderTop: '4px solid #06b6d4',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }} />
+      </div>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }} className="slide-up">
@@ -887,180 +1091,187 @@ function Dashboard({ marketData, stockData, loading, portfolio, onPortfolioClick
         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 253, 250, 0.9) 100%)',
         borderRadius: '24px',
         padding: '48px',
-        border: '1px solid rgba(6, 182, 212, 0.1)',
-        position: 'relative',
-        overflow: 'hidden',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
+        border: '1px solid rgba(6, 182, 212, 0.2)',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(20px)'
       }}>
-        <div style={{ position: 'relative', zIndex: 2 }}>
-          <h1 style={{
-            fontSize: '56px',
-            fontWeight: '900',
-            margin: 0,
-            background: 'linear-gradient(135deg, #0F172A 0%, #06B6D4 50%, #10B981 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            letterSpacing: '-0.03em',
-            lineHeight: '1.1',
-            marginBottom: '16px'
-          }}>
-            Portfolio Command Center
-          </h1>
-          <p style={{
-            fontSize: '22px',
-            color: '#475569',
-            margin: 0,
-            fontWeight: '500',
-            lineHeight: '1.4',
-            marginBottom: '24px'
-          }}>
-            Real-time Bitcoin & leveraged stock trading with professional execution
-          </p>
+        <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#0f172a', marginBottom: '8px' }}>
+          Treasury Dashboard
+        </h1>
+        <p style={{ color: '#64748b', marginBottom: '32px', fontSize: '18px' }}>
+          Real-time portfolio overview and market data
+        </p>
 
-          {loading ? (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              padding: '24px',
-              background: 'rgba(255, 255, 255, 0.8)',
-              borderRadius: '16px',
-              border: '1px solid rgba(6, 182, 212, 0.1)'
-            }}>
-              <span style={{ fontSize: '16px', fontWeight: '600' }}>Loading live market data...</span>
-            </div>
-          ) : marketData && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '24px',
-              padding: '24px',
-              background: 'rgba(255, 255, 255, 0.8)',
-              borderRadius: '16px',
-              border: '1px solid rgba(6, 182, 212, 0.1)',
-              backdropFilter: 'blur(12px)'
-            }}>
-              <div style={{ fontSize: '36px', fontWeight: '900', color: '#0F172A' }}>
-                {formatCurrency(marketData.usd)}
-              </div>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                borderRadius: '12px',
-                background: marketData.usd_24h_change >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                color: marketData.usd_24h_change >= 0 ? '#10B981' : '#EF4444'
-              }}>
-                <span style={{ fontSize: '16px' }}>
-                  {marketData.usd_24h_change >= 0 ? '↗' : '↘'}
-                </span>
-                <span style={{ fontWeight: '700', fontSize: '14px' }}>
-                  {Math.abs(marketData.usd_24h_change).toFixed(2)}%
-                </span>
-                <span style={{ fontSize: '12px', opacity: 0.8 }}>24h</span>
-              </div>
-              <div style={{ fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
-                Live Bitcoin Price • Updated every 30s
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: '24px'
-      }}>
-        <KPICard 
-          title="Total Portfolio Value"
-          value={formatCurrency(portfolio.totalValue)}
-          subtitle="Cash + Bitcoin + Stocks"
-          icon="wallet"
-          primary={true}
-          onClick={onPortfolioClick}
-        />
-        <KPICard 
-          title="Bitcoin Holdings" 
-          value={formatBTC(portfolio.btcHoldings)}
-          subtitle={`${allocationPercentage.toFixed(1)}% of portfolio`}
-          icon="bitcoin"
-        />
-        <KPICard 
-          title="Cash Available" 
-          value={formatCurrency(portfolio.cashUSD)}
-          subtitle="Available for trading"
-          icon="cash"
-        />
-        <KPICard 
-          title="Unrealized P/L" 
-          value={formatCurrency(portfolio.unrealizedPL)}
-          subtitle="Mark-to-market gains/losses"
-          change={portfolio.costBasis > 0 ? (portfolio.unrealizedPL / portfolio.costBasis * 100) : 0}
-          icon="chart"
-        />
-      </div>
-
-      {Object.values(portfolio.stockHoldings).some(shares => shares > 0) && (
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.9)',
-          borderRadius: '24px',
-          padding: '32px',
-          border: '1px solid rgba(6, 182, 212, 0.1)',
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
-        }} className="hover-lift">
-          <h3 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '24px', color: '#0F172A' }}>
-            Leveraged Bitcoin Stock Holdings
-          </h3>
+        {/* Market Data Bar */}
+        {marketData && (
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '16px'
+            background: 'rgba(6, 182, 212, 0.05)',
+            borderRadius: '16px',
+            padding: '20px',
+            marginBottom: '32px',
+            border: '1px solid rgba(6, 182, 212, 0.1)'
           }}>
-            {Object.entries(portfolio.stockHoldings).map(([symbol, shares]) => {
-              if (shares <= 0) return null
-              const stock = stockData[symbol]
-              const value = shares * (stock?.price || 0)
-              return (
-                <div key={symbol} style={{
-                  padding: '20px',
-                  background: 'rgba(139, 92, 246, 0.05)',
-                  borderRadius: '16px',
-                  border: '1px solid rgba(139, 92, 246, 0.1)'
-                }}>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '800', color: '#8B5CF6' }}>
-                    {symbol}
-                  </h4>
-                  <p style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>
-                    {formatCurrency(value)}
-                  </p>
-                  <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
-                    {shares.toFixed(2)} shares @ {formatCurrency(stock?.price || 0)}
-                  </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Bitcoin Price</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a' }}>
+                  {formatCurrency(marketData.usd)}
                 </div>
-              )
-            })}
+              </div>
+              <div>
+                <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>24h Change</div>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: marketData.usd_24h_change >= 0 ? '#22c55e' : '#ef4444'
+                }}>
+                  {marketData.usd_24h_change >= 0 ? '+' : ''}{marketData.usd_24h_change?.toFixed(2)}%
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Market Cap</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
+                  {formatCurrency(marketData.usd_market_cap)}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>24h Volume</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
+                  {formatCurrency(marketData.usd_24h_vol)}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Portfolio KPIs */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+          <div 
+            onClick={onPortfolioClick}
+            style={{
+              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(8, 145, 178, 0.1) 100%)',
+              borderRadius: '20px',
+              padding: '32px',
+              border: '1px solid rgba(6, 182, 212, 0.2)',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              transform: 'translateY(0)',
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-8px)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ color: '#0f172a', fontSize: '18px', margin: 0 }}>Total Portfolio Value</h3>
+              <div style={{ fontSize: '24px' }}>💎</div>
+            </div>
+            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#06b6d4', marginBottom: '8px' }}>
+              {formatCurrency(portfolio.totalValue)}
+            </div>
+            <div style={{ fontSize: '14px', color: '#64748b' }}>
+              Click for detailed breakdown
+            </div>
+          </div>
+
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.1) 0%, rgba(251, 113, 133, 0.1) 100%)',
+            borderRadius: '20px',
+            padding: '32px',
+            border: '1px solid rgba(251, 146, 60, 0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ color: '#0f172a', fontSize: '18px', margin: 0 }}>Bitcoin Holdings</h3>
+              <div style={{ fontSize: '24px' }}>₿</div>
+            </div>
+            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '8px' }}>
+              {formatBTC(portfolio.btcHoldings)}
+            </div>
+            <div style={{ fontSize: '14px', color: '#64748b' }}>
+              Hot: {formatBTC(portfolio.btcHoldingsHot)} | Cold: {formatBTC(portfolio.btcHoldingsCold)}
+            </div>
+          </div>
+
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%)',
+            borderRadius: '20px',
+            padding: '32px',
+            border: '1px solid rgba(34, 197, 94, 0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ color: '#0f172a', fontSize: '18px', margin: 0 }}>Unrealized P&L</h3>
+              <div style={{ fontSize: '24px' }}>📈</div>
+            </div>
+            <div style={{
+              fontSize: '28px',
+              fontWeight: 'bold',
+              color: portfolio.unrealizedPL >= 0 ? '#22c55e' : '#ef4444',
+              marginBottom: '8px'
+            }}>
+              {portfolio.unrealizedPL >= 0 ? '+' : ''}{formatCurrency(portfolio.unrealizedPL)}
+            </div>
+            <div style={{ fontSize: '14px', color: '#64748b' }}>
+              Cost Basis: {formatCurrency(portfolio.costBasis)}
+            </div>
+          </div>
+
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%)',
+            borderRadius: '20px',
+            padding: '32px',
+            border: '1px solid rgba(147, 51, 234, 0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ color: '#0f172a', fontSize: '18px', margin: 0 }}>BTC Allocation</h3>
+              <div style={{ fontSize: '24px' }}>📊</div>
+            </div>
+            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#9333ea', marginBottom: '8px' }}>
+              {allocationPercentage.toFixed(1)}%
+            </div>
+            <div style={{ fontSize: '14px', color: '#64748b' }}>
+              of total portfolio value
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
+      {/* Recent Trades */}
       {portfolio.trades.length > 0 && (
         <div style={{
           background: 'rgba(255, 255, 255, 0.9)',
           borderRadius: '24px',
           padding: '32px',
-          border: '1px solid rgba(6, 182, 212, 0.1)',
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
-        }} className="hover-lift">
-          <h3 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '24px', color: '#0F172A' }}>
-            Recent Trades
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {portfolio.trades.slice(0, 5).map((trade) => (
-              <TradeRow key={trade.id} trade={trade} onTransferClick={onTransferClick} formatCurrency={formatCurrency} />
+          border: '1px solid rgba(6, 182, 212, 0.2)',
+          backdropFilter: 'blur(20px)'
+        }}>
+          <h2 style={{ color: '#0f172a', marginBottom: '24px' }}>Recent Trades</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflow: 'auto' }}>
+            {portfolio.trades.slice(-5).reverse().map((trade, index) => (
+              <div key={trade.id} style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px',
+                background: 'rgba(6, 182, 212, 0.05)',
+                borderRadius: '12px',
+                border: '1px solid rgba(6, 182, 212, 0.1)'
+              }}>
+                <div>
+                  <div style={{ fontWeight: '600', color: '#0f172a' }}>
+                    {trade.side} {trade.asset}
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#64748b' }}>
+                    {new Date(trade.timestamp).toLocaleString()}
+                    {trade.storage && ` • ${trade.storage} wallet`}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: '600', color: trade.side === 'BUY' ? '#22c55e' : '#ef4444' }}>
+                    {trade.side === 'BUY' ? '+' : '-'}{trade.asset === 'BTC' ? formatBTC(trade.amount) : `${trade.amount.toFixed(2)} shares`}
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#64748b' }}>
+                    {formatCurrency(trade.totalUSD)}
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -1069,1006 +1280,600 @@ function Dashboard({ marketData, stockData, loading, portfolio, onPortfolioClick
   )
 }
 
-function KPICard({ title, value, subtitle, change, icon, primary = false, onClick }) {
-  return (
-    <div 
-      onClick={onClick}
-      style={{
-        background: primary 
-          ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%)'
-          : 'rgba(255, 255, 255, 0.9)',
-        borderRadius: '20px',
-        padding: '28px',
-        border: primary 
-          ? '1px solid rgba(6, 182, 212, 0.2)'
-          : '1px solid rgba(6, 182, 212, 0.1)',
-        backdropFilter: 'blur(12px)',
-        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        cursor: onClick ? 'pointer' : 'default',
-        position: 'relative',
-        overflow: 'hidden'
-      }}
-      className={onClick ? "hover-lift" : ""}
-    >
-      <div style={{ position: 'relative', zIndex: 2 }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: '20px'
-        }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            background: primary ? 'linear-gradient(135deg, #06B6D4 0%, #10B981 100%)' : 'rgba(6, 182, 212, 0.1)',
-            borderRadius: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '20px',
-            color: primary ? 'white' : '#06B6D4'
-          }}>
-            {icon === 'wallet' && '💼'}
-            {icon === 'bitcoin' && '₿'}
-            {icon === 'cash' && '💰'}
-            {icon === 'chart' && '📈'}
-          </div>
-          {change !== undefined && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '6px 12px',
-              borderRadius: '12px',
-              fontSize: '12px',
-              fontWeight: '700',
-              background: change >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-              color: change >= 0 ? '#10B981' : '#EF4444'
-            }}>
-              <span>{change >= 0 ? '↗' : '↘'}</span>
-              <span>{Math.abs(change).toFixed(1)}%</span>
-            </div>
-          )}
-        </div>
-        
-        <div>
-          <h3 style={{
-            fontSize: '14px',
-            fontWeight: '600',
-            color: '#64748B',
-            marginBottom: '8px',
-            letterSpacing: '0.01em'
-          }}>
-            {title}
-          </h3>
-          <p style={{
-            fontSize: '32px',
-            fontWeight: '900',
-            margin: 0,
-            letterSpacing: '-0.02em',
-            lineHeight: '1',
-            marginBottom: '4px',
-            color: '#0F172A'
-          }}>
-            {value}
-          </p>
-          <p style={{
-            fontSize: '13px',
-            color: '#64748B',
-            margin: 0,
-            fontWeight: '500'
-          }}>
-            {subtitle}
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function TradeRow({ trade, onTransferClick, formatCurrency }) {
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp)
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-  }
-
-  const getStorageStatus = () => {
-    switch(trade.storage) {
-      case 'hot': return { text: 'Hot Storage', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.1)' }
-      case 'cold': return { text: 'Cold Storage', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)' }
-      default: return { text: 'Not Transferred', color: '#6B7280', bg: 'rgba(107, 114, 128, 0.1)' }
-    }
-  }
-
-  const storageStatus = getStorageStatus()
-
-  return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '20px',
-      background: 'rgba(255, 255, 255, 0.8)',
-      borderRadius: '16px',
-      border: '1px solid rgba(6, 182, 212, 0.1)',
-      transition: 'all 0.2s ease'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <div style={{
-          width: '48px',
-          height: '48px',
-          borderRadius: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontWeight: '700',
-          fontSize: '18px',
-          background: trade.side === 'BUY' 
-            ? 'linear-gradient(135deg, #10B981 0%, #22C55E 100%)'
-            : 'linear-gradient(135deg, #EF4444 0%, #F97316 100%)'
-        }}>
-          {trade.side === 'BUY' ? '↗' : '↘'}
-        </div>
-        <div>
-          <p style={{
-            fontSize: '16px',
-            fontWeight: '700',
-            margin: 0,
-            marginBottom: '4px',
-            color: '#0F172A'
-          }}>
-            {formatCurrency(trade.amountUSD)} • {trade.symbol}
-          </p>
-          <p style={{
-            fontSize: '14px',
-            color: '#64748B',
-            margin: 0,
-            fontWeight: '500'
-          }}>
-            {trade.type === 'crypto' 
-              ? `${trade.quantity.toFixed(6)} BTC at ${formatCurrency(trade.price)}`
-              : `${trade.quantity.toFixed(2)} shares at ${formatCurrency(trade.price)}`
-            }
-          </p>
-        </div>
-      </div>
-      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '6px 12px',
-          borderRadius: '10px',
-          fontSize: '12px',
-          fontWeight: '700',
-          background: 'rgba(16, 185, 129, 0.1)',
-          color: '#10B981'
-        }}>
-          ✓ {trade.status}
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{
-            padding: '4px 8px',
-            borderRadius: '8px',
-            fontSize: '10px',
-            fontWeight: '600',
-            background: storageStatus.bg,
-            color: storageStatus.color
-          }}>
-            {storageStatus.text}
-          </div>
-          
-          {trade.storage === 'none' && (
-            <button
-              onClick={() => onTransferClick(trade)}
-              style={{
-                padding: '4px 8px',
-                background: 'rgba(6, 182, 212, 0.1)',
-                border: '1px solid rgba(6, 182, 212, 0.2)',
-                borderRadius: '6px',
-                fontSize: '10px',
-                fontWeight: '600',
-                color: '#06B6D4',
-                cursor: 'pointer'
-              }}
-            >
-              Transfer
-            </button>
-          )}
-        </div>
-        
-        <p style={{
-          fontSize: '12px',
-          color: '#64748B',
-          margin: 0,
-          fontWeight: '500'
-        }}>
-          {formatTime(trade.timestamp)}
-        </p>
-      </div>
-    </div>
-  )
-}
-
-// Trading Component
-function Trading({ marketData, stockData, portfolio, executeTrade, formatCurrency }) {
+// Trading Interface Component
+function TradingInterface({ marketData, stockData, loading, portfolio, executeTrade, formatCurrency }) {
   const [selectedAsset, setSelectedAsset] = useState('BTC')
-  const [selectedSide, setSelectedSide] = useState('BUY')
-  const [amount, setAmount] = useState('')
-  const [hasQuote, setHasQuote] = useState(false)
-  const [tradeResult, setTradeResult] = useState(null)
+  const [tradeAmount, setTradeAmount] = useState('')
+  const [tradeSide, setTradeSide] = useState('BUY')
 
-  const assets = [
-    { symbol: 'BTC', name: 'Bitcoin', type: 'crypto' },
-    { symbol: 'MSTR', name: 'MicroStrategy', type: 'stock' },
-    { symbol: 'STRC', name: 'Strive Bitcoin ETF', type: 'stock' },
-    { symbol: 'STRK', name: 'Strike Technologies', type: 'stock' },
-    { symbol: 'STRF', name: 'Strategic Bitcoin Fund', type: 'stock' },
-    { symbol: 'STRD', name: 'Stridepoint BTC', type: 'stock' }
-  ]
+  const currentPrice = selectedAsset === 'BTC' ? marketData?.usd : stockData[selectedAsset]?.usd
+  const estimatedAssetAmount = tradeAmount && currentPrice ? parseFloat(tradeAmount) / currentPrice : 0
 
-  const getQuote = () => {
-    if (amount && ((selectedAsset === 'BTC' && marketData) || (selectedAsset !== 'BTC' && stockData[selectedAsset]))) {
-      setHasQuote(true)
-      setTradeResult(null)
-    }
-  }
-
-  const handleTrade = () => {
-    const amountNum = parseFloat(amount)
-    const assetType = selectedAsset === 'BTC' ? 'crypto' : 'stock'
-    const success = executeTrade(assetType, selectedSide, amountNum, selectedAsset)
-    
-    if (success) {
-      setTradeResult({ success: true, message: `${selectedSide} order executed successfully!` })
-      setAmount('')
-      setHasQuote(false)
-    } else {
-      setTradeResult({ 
-        success: false, 
-        message: selectedSide === 'BUY' ? 'Insufficient cash balance' : `Insufficient ${selectedAsset} holdings`
-      })
-    }
-    
-    setTimeout(() => setTradeResult(null), 3000)
-  }
-
-  const getCurrentPrice = () => {
-    if (selectedAsset === 'BTC') return marketData?.usd || 0
-    return stockData[selectedAsset]?.price || 0
-  }
-
-  const estimatedQuantity = amount && getCurrentPrice() ? (parseFloat(amount) / getCurrentPrice()) : 0
-  const fees = amount ? (parseFloat(amount) * 0.005) : 0
+  const maxBuyAmount = portfolio.cashUSD
+  const maxSellAmount = selectedAsset === 'BTC' 
+    ? portfolio.btcHoldingsHot * (currentPrice || 0)
+    : (portfolio.stocks[selectedAsset]?.shares || 0) * (currentPrice || 0)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }} className="slide-up">
-      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <h1 style={{
-          fontSize: '56px',
-          fontWeight: '900',
-          margin: 0,
-          background: 'linear-gradient(135deg, #0F172A 0%, #06B6D4 50%, #10B981 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          letterSpacing: '-0.03em',
-          marginBottom: '16px'
-        }}>
-          Professional Trading Desk
-        </h1>
-        <p style={{ fontSize: '22px', color: '#475569', margin: 0, fontWeight: '500' }}>
-          Execute Bitcoin & leveraged stock trades with real-time market data
-        </p>
-      </div>
-
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '32px',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        width: '100%'
+        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 253, 250, 0.9) 100%)',
+        borderRadius: '24px',
+        padding: '48px',
+        border: '1px solid rgba(6, 182, 212, 0.2)',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(20px)'
       }}>
-        {/* Trading Panel */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.9)',
-          borderRadius: '24px',
-          padding: '32px',
-          border: '1px solid rgba(6, 182, 212, 0.1)',
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
-        }} className="hover-lift">
-          <h3 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '32px', color: '#0F172A' }}>
-            Execute Trade
-          </h3>
+        <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#0f172a', marginBottom: '32px' }}>
+          Trading Interface
+        </h1>
 
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px' }}>
           {/* Asset Selection */}
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              fontSize: '14px',
-              fontWeight: '700',
-              color: '#0F172A',
-              marginBottom: '12px',
-              display: 'block'
-            }}>
-              Select Asset
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-              {assets.map((asset) => (
+          <div>
+            <h3 style={{ color: '#0f172a', marginBottom: '16px' }}>Select Asset</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button
+                onClick={() => setSelectedAsset('BTC')}
+                style={{
+                  padding: '16px',
+                  background: selectedAsset === 'BTC' ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' : 'rgba(6, 182, 212, 0.1)',
+                  border: '1px solid rgba(6, 182, 212, 0.2)',
+                  borderRadius: '12px',
+                  color: selectedAsset === 'BTC' ? 'white' : '#0f172a',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                ₿ Bitcoin (BTC) - {loading ? 'Loading...' : formatCurrency(marketData?.usd || 0)}
+              </button>
+              
+              {['MSTR', 'STRE', 'STRK', 'STRF', 'STRD'].map(symbol => (
                 <button
-                  key={asset.symbol}
-                  onClick={() => {
-                    setSelectedAsset(asset.symbol)
-                    setHasQuote(false)
-                    setTradeResult(null)
-                  }}
+                  key={symbol}
+                  onClick={() => setSelectedAsset(symbol)}
                   style={{
-                    padding: '12px 8px',
+                    padding: '16px',
+                    background: selectedAsset === symbol ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' : 'rgba(6, 182, 212, 0.1)',
+                    border: '1px solid rgba(6, 182, 212, 0.2)',
                     borderRadius: '12px',
-                    border: 'none',
+                    color: selectedAsset === symbol ? 'white' : '#0f172a',
                     cursor: 'pointer',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    transition: 'all 0.2s ease',
-                    background: selectedAsset === asset.symbol 
-                      ? (asset.type === 'crypto' 
-                          ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
-                          : 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)')
-                      : 'rgba(107, 114, 128, 0.1)',
-                    color: selectedAsset === asset.symbol ? 'white' : '#6B7280'
+                    fontWeight: '600',
+                    transition: 'all 0.3s ease'
                   }}
                 >
-                  {asset.symbol}
+                  📈 {symbol} - {loading ? 'Loading...' : formatCurrency(stockData[symbol]?.usd || 0)}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Buy/Sell Toggle */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '32px' }}>
-            <button
-              onClick={() => {
-                setSelectedSide('BUY')
-                setHasQuote(false)
-                setTradeResult(null)
-              }}
-              style={{
-                padding: '16px',
-                borderRadius: '16px',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: '700',
-                fontSize: '16px',
-                background: selectedSide === 'BUY' 
-                  ? 'linear-gradient(135deg, #10B981 0%, #22C55E 100%)'
-                  : 'rgba(16, 185, 129, 0.1)',
-                color: selectedSide === 'BUY' ? 'white' : '#10B981',
-                boxShadow: selectedSide === 'BUY' ? '0 8px 32px rgba(16, 185, 129, 0.3)' : 'none'
-              }}
-            >
-              🔥 Buy {selectedAsset}
-            </button>
-            <button
-              onClick={() => {
-                setSelectedSide('SELL')
-                setHasQuote(false)
-                setTradeResult(null)
-              }}
-              style={{
-                padding: '16px',
-                borderRadius: '16px',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: '700',
-                fontSize: '16px',
-                background: selectedSide === 'SELL' 
-                  ? 'linear-gradient(135deg, #EF4444 0%, #F97316 100%)'
-                  : 'rgba(239, 68, 68, 0.1)',
-                color: selectedSide === 'SELL' ? 'white' : '#EF4444',
-                boxShadow: selectedSide === 'SELL' ? '0 8px 32px rgba(239, 68, 68, 0.3)' : 'none'
-              }}
-            >
-              📉 Sell {selectedAsset}
-            </button>
-          </div>
-
-          {/* Amount Input */}
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ fontSize: '14px', fontWeight: '700', color: '#0F172A', marginBottom: '8px', display: 'block' }}>
-              Trade Amount (USD)
-            </label>
-            <input
-              type="text"
-              value={amount}
-              onChange={(e) => {
-                const value = e.target.value.replace(/[^0-9]/g, '')
-                setAmount(value)
-                setHasQuote(false)
-                setTradeResult(null)
-              }}
-              placeholder="1000000"
-              style={{
-                width: '100%',
-                padding: '16px 20px',
-                borderRadius: '16px',
-                border: '2px solid rgba(6, 182, 212, 0.2)',
-                background: 'rgba(255, 255, 255, 0.8)',
-                color: '#0F172A',
-                fontSize: '18px',
-                fontWeight: '700',
-                fontFamily: 'inherit',
-                outline: 'none'
-              }}
-            />
-          </div>
-
-          {/* Quote Section */}
-          {hasQuote && amount && getCurrentPrice() > 0 && (
-            <div style={{
-              padding: '20px',
-              background: 'rgba(6, 182, 212, 0.05)',
-              borderRadius: '16px',
-              marginBottom: '24px',
-              border: '1px solid rgba(6, 182, 212, 0.2)'
-            }}>
-              <h4 style={{
-                fontSize: '16px',
-                fontWeight: '800',
-                marginBottom: '16px',
-                color: selectedSide === 'BUY' ? '#10B981' : '#EF4444'
-              }}>
-                {selectedSide} {selectedAsset} Quote
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748B', fontSize: '14px' }}>
-                    Est. {selectedAsset === 'BTC' ? 'Bitcoin' : 'Shares'}:
-                  </span>
-                  <span style={{ fontWeight: '700', fontSize: '16px' }}>
-                    {selectedAsset === 'BTC' 
-                      ? `${estimatedQuantity.toFixed(6)} BTC`
-                      : `${estimatedQuantity.toFixed(2)} shares`
-                    }
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748B', fontSize: '14px' }}>Current Price:</span>
-                  <span style={{ fontWeight: '700', fontSize: '16px' }}>{formatCurrency(getCurrentPrice())}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748B', fontSize: '14px' }}>Fees (0.5%):</span>
-                  <span style={{ fontWeight: '700', fontSize: '16px' }}>{formatCurrency(fees)}</span>
-                </div>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  paddingTop: '12px', 
-                  borderTop: '1px solid rgba(6, 182, 212, 0.2)' 
-                }}>
-                  <span style={{ color: '#0F172A', fontSize: '14px', fontWeight: '700' }}>
-                    {selectedSide === 'BUY' ? 'Total Cost:' : 'Net Received:'}
-                  </span>
-                  <span style={{ fontWeight: '900', fontSize: '18px', color: '#0F172A' }}>
-                    {formatCurrency(selectedSide === 'BUY' ? parseFloat(amount) + fees : parseFloat(amount) - fees)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Trade Result */}
-          {tradeResult && (
-            <div style={{
-              padding: '16px',
-              borderRadius: '12px',
-              marginBottom: '24px',
-              background: tradeResult.success ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-              border: `1px solid ${tradeResult.success ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-              color: tradeResult.success ? '#10B981' : '#EF4444',
-              fontWeight: '600',
-              textAlign: 'center'
-            }}>
-              {tradeResult.success ? '✅' : '❌'} {tradeResult.message}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <button
-              onClick={getQuote}
-              disabled={!amount || getCurrentPrice() <= 0}
-              style={{
-                width: '100%',
-                padding: '16px',
-                borderRadius: '16px',
-                border: 'none',
-                cursor: (amount && getCurrentPrice() > 0) ? 'pointer' : 'not-allowed',
-                fontWeight: '700',
-                fontSize: '16px',
-                background: (amount && getCurrentPrice() > 0) 
-                  ? 'rgba(6, 182, 212, 0.1)'
-                  : 'rgba(148, 163, 184, 0.1)',
-                color: (amount && getCurrentPrice() > 0) ? '#06B6D4' : '#94A3B8',
-                opacity: (amount && getCurrentPrice() > 0) ? 1 : 0.5
-              }}
-            >
-              ⚡ Get Real-Time Quote
-            </button>
+          {/* Trade Form */}
+          <div>
+            <h3 style={{ color: '#0f172a', marginBottom: '16px' }}>Execute Trade</h3>
             
-            {hasQuote && (
+            {/* Buy/Sell Toggle */}
+            <div style={{ display: 'flex', marginBottom: '24px', background: 'rgba(6, 182, 212, 0.1)', borderRadius: '12px', padding: '4px' }}>
               <button
-                onClick={handleTrade}
+                onClick={() => setTradeSide('BUY')}
                 style={{
-                  width: '100%',
-                  padding: '16px',
-                  borderRadius: '16px',
+                  flex: 1,
+                  padding: '12px',
+                  background: tradeSide === 'BUY' ? '#22c55e' : 'transparent',
                   border: 'none',
-                  cursor: 'pointer',
-                  fontWeight: '700',
-                  fontSize: '16px',
-                  background: selectedSide === 'BUY' 
-                    ? 'linear-gradient(135deg, #10B981 0%, #22C55E 100%)'
-                    : 'linear-gradient(135deg, #EF4444 0%, #F97316 100%)',
-                  color: 'white',
-                  boxShadow: selectedSide === 'BUY' 
-                    ? '0 8px 32px rgba(16, 185, 129, 0.3)'
-                    : '0 8px 32px rgba(239, 68, 68, 0.3)'
+                  borderRadius: '8px',
+                  color: tradeSide === 'BUY' ? 'white' : '#64748b',
+                  fontWeight: '600',
+                  cursor: 'pointer'
                 }}
               >
-                🚀 Execute {selectedSide} Order
+                BUY
               </button>
+              <button
+                onClick={() => setTradeSide('SELL')}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: tradeSide === 'SELL' ? '#ef4444' : 'transparent',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: tradeSide === 'SELL' ? 'white' : '#64748b',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                SELL
+              </button>
+            </div>
+
+            {/* Amount Input */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', color: '#0f172a', fontWeight: '600', marginBottom: '8px' }}>
+                Amount (USD)
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="number"
+                  value={tradeAmount}
+                  onChange={(e) => setTradeAmount(e.target.value)}
+                  placeholder="Enter USD amount"
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    border: '1px solid rgba(6, 182, 212, 0.2)',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    background: 'white'
+                  }}
+                />
+                <button
+                  onClick={() => setTradeAmount((tradeSide === 'BUY' ? maxBuyAmount : maxSellAmount).toString())}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: '#06b6d4',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  MAX
+                </button>
+              </div>
+              <div style={{ fontSize: '14px', color: '#64748b', marginTop: '8px' }}>
+                Max {tradeSide.toLowerCase()}: {formatCurrency(tradeSide === 'BUY' ? maxBuyAmount : maxSellAmount)}
+              </div>
+            </div>
+
+            {/* Trade Preview */}
+            {tradeAmount && currentPrice && (
+              <div style={{
+                background: 'rgba(6, 182, 212, 0.05)',
+                borderRadius: '12px',
+                padding: '16px',
+                marginBottom: '24px',
+                border: '1px solid rgba(6, 182, 212, 0.1)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ color: '#64748b' }}>Estimated {selectedAsset}:</span>
+                  <span style={{ fontWeight: '600', color: '#0f172a' }}>
+                    {selectedAsset === 'BTC' ? `${estimatedAssetAmount.toFixed(6)} BTC` : `${estimatedAssetAmount.toFixed(2)} shares`}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ color: '#64748b' }}>Price:</span>
+                  <span style={{ fontWeight: '600', color: '#0f172a' }}>{formatCurrency(currentPrice)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ color: '#64748b' }}>Fee (0.5%):</span>
+                  <span style={{ fontWeight: '600', color: '#0f172a' }}>{formatCurrency(parseFloat(tradeAmount || 0) * 0.005)}</span>
+                </div>
+                <hr style={{ margin: '12px 0', border: 'none', borderTop: '1px solid rgba(6, 182, 212, 0.1)' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#0f172a', fontWeight: '600' }}>Total:</span>
+                  <span style={{ fontWeight: '700', color: '#0f172a' }}>{formatCurrency(parseFloat(tradeAmount || 0))}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Warning for BTC sell from cold storage */}
+            {tradeSide === 'SELL' && selectedAsset === 'BTC' && portfolio.btcHoldingsHot < estimatedAssetAmount && portfolio.btcHoldingsCold > 0 && (
+              <div style={{
+                background: 'rgba(251, 113, 133, 0.1)',
+                border: '1px solid rgba(251, 113, 133, 0.2)',
+                borderRadius: '12px',
+                padding: '16px',
+                marginBottom: '24px'
+              }}>
+                <div style={{ color: '#dc2626', fontWeight: '600', marginBottom: '8px' }}>⚠️ Insufficient Hot Wallet Balance</div>
+                <div style={{ color: '#64748b', fontSize: '14px' }}>
+                  You have {portfolio.btcHoldingsCold.toFixed(6)} BTC in cold storage. 
+                  Transfer to hot wallet first via multisig process.
+                </div>
+              </div>
+            )}
+
+            {/* Execute Button */}
+            <button
+              onClick={() => executeTrade(tradeSide, parseFloat(tradeAmount), selectedAsset)}
+              disabled={!tradeAmount || !currentPrice || loading}
+              style={{
+                width: '100%',
+                padding: '20px',
+                background: tradeSide === 'BUY' 
+                  ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
+                  : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                border: 'none',
+                borderRadius: '12px',
+                color: 'white',
+                fontSize: '18px',
+                fontWeight: '700',
+                cursor: !tradeAmount || !currentPrice || loading ? 'not-allowed' : 'pointer',
+                opacity: !tradeAmount || !currentPrice || loading ? 0.5 : 1,
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {loading ? 'Loading...' : `${tradeSide} ${selectedAsset}`}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Custody Interface Component
+function CustodyInterface({ portfolio, coldStorage, marketData, onTransferRequest, formatCurrency }) {
+  const [transferAmount, setTransferAmount] = useState('')
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }} className="slide-up">
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 253, 250, 0.9) 100%)',
+        borderRadius: '24px',
+        padding: '48px',
+        border: '1px solid rgba(6, 182, 212, 0.2)',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(20px)'
+      }}>
+        <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#0f172a', marginBottom: '32px' }}>
+          Bitcoin Custody Management
+        </h1>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' }}>
+          {/* Hot Wallet */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.1) 0%, rgba(251, 113, 133, 0.1) 100%)',
+            borderRadius: '20px',
+            padding: '32px',
+            border: '1px solid rgba(251, 146, 60, 0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ color: '#0f172a', fontSize: '20px', margin: 0 }}>🔥 Hot Wallet</h3>
+              <div style={{
+                background: 'rgba(251, 146, 60, 0.2)',
+                color: '#f59e0b',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: '600'
+              }}>
+                ACTIVE
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '8px' }}>
+                {portfolio.btcHoldingsHot.toFixed(6)} BTC
+              </div>
+              <div style={{ fontSize: '16px', color: '#64748b' }}>
+                {formatCurrency(portfolio.btcHoldingsHot * (marketData?.usd || 0))}
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255, 255, 255, 0.5)', borderRadius: '12px', padding: '16px' }}>
+              <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px' }}>Security Features:</div>
+              <ul style={{ margin: 0, paddingLeft: '16px', color: '#64748b', fontSize: '14px' }}>
+                <li>2FA Authentication</li>
+                <li>API Rate Limiting</li>
+                <li>Real-time Monitoring</li>
+                <li>Instant Trading Access</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Cold Storage */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%)',
+            borderRadius: '20px',
+            padding: '32px',
+            border: '1px solid rgba(59, 130, 246, 0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ color: '#0f172a', fontSize: '20px', margin: 0 }}>❄️ Cold Storage</h3>
+              <div style={{
+                background: 'rgba(59, 130, 246, 0.2)',
+                color: '#3b82f6',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: '600'
+              }}>
+                SECURED
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#3b82f6', marginBottom: '8px' }}>
+                {coldStorage.totalBTC.toFixed(6)} BTC
+              </div>
+              <div style={{ fontSize: '16px', color: '#64748b' }}>
+                {formatCurrency(coldStorage.totalBTC * (marketData?.usd || 0))}
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255, 255, 255, 0.5)', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px' }}>Multisig Configuration:</div>
+              <div style={{ color: '#0f172a', fontWeight: '600', marginBottom: '8px' }}>
+                {coldStorage.multisigConfig.requiredSignatures} of {coldStorage.multisigConfig.totalSigners} signatures required
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '16px', color: '#64748b', fontSize: '14px' }}>
+                <li>Hardware Security Modules</li>
+                <li>Offline Key Generation</li>
+                <li>Geographic Distribution</li>
+                <li>Insurance Coverage</li>
+              </ul>
+            </div>
+
+            {/* Transfer to Hot Wallet */}
+            {coldStorage.totalBTC > 0 && (
+              <div style={{ background: 'rgba(255, 255, 255, 0.5)', borderRadius: '12px', padding: '16px' }}>
+                <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '12px' }}>Transfer to Hot Wallet:</div>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  <input
+                    type="number"
+                    value={transferAmount}
+                    onChange={(e) => setTransferAmount(e.target.value)}
+                    placeholder="BTC amount"
+                    max={coldStorage.totalBTC}
+                    step="0.000001"
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  <button
+                    onClick={() => setTransferAmount(coldStorage.totalBTC.toString())}
+                    style={{
+                      background: '#3b82f6',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      padding: '12px 16px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    MAX
+                  </button>
+                </div>
+                <button
+                  onClick={() => onTransferRequest(parseFloat(transferAmount))}
+                  disabled={!transferAmount || parseFloat(transferAmount) > coldStorage.totalBTC}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    background: !transferAmount || parseFloat(transferAmount) > coldStorage.totalBTC 
+                      ? 'rgba(59, 130, 246, 0.3)' 
+                      : '#3b82f6',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px',
+                    cursor: !transferAmount || parseFloat(transferAmount) > coldStorage.totalBTC ? 'not-allowed' : 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  Start Multisig Transfer
+                </button>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Market Data Panel */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.9)',
-          borderRadius: '24px',
-          padding: '32px',
-          border: '1px solid rgba(6, 182, 212, 0.1)',
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
-        }} className="hover-lift">
-          <h3 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '32px', color: '#0F172A' }}>
-            Live Market Data
-          </h3>
-
-          {/* Selected Asset Price */}
+        {/* Transaction History */}
+        {coldStorage.transactions.length > 0 && (
           <div style={{
-            textAlign: 'center',
-            marginBottom: '32px',
-            padding: '24px',
-            background: 'rgba(6, 182, 212, 0.05)',
-            borderRadius: '16px',
-            border: '1px solid rgba(6, 182, 212, 0.1)'
+            background: 'rgba(255, 255, 255, 0.5)',
+            borderRadius: '20px',
+            padding: '32px',
+            border: '1px solid rgba(6, 182, 212, 0.2)',
+            marginTop: '32px'
           }}>
-            <h4 style={{ fontSize: '16px', color: '#64748B', margin: '0 0 8px 0' }}>
-              {selectedAsset} Price
-            </h4>
-            <div style={{
-              fontSize: '36px',
-              fontWeight: '900',
-              marginBottom: '8px',
-              letterSpacing: '-0.02em',
-              color: '#0F172A'
-            }}>
-              {formatCurrency(getCurrentPrice())}
-            </div>
-            {selectedAsset === 'BTC' && marketData && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}>
-                <span style={{
-                  color: marketData.usd_24h_change >= 0 ? '#10B981' : '#EF4444',
-                  fontSize: '16px',
-                  fontWeight: '700'
-                }}>
-                  {marketData.usd_24h_change >= 0 ? '↗' : '↘'} {Math.abs(marketData.usd_24h_change).toFixed(2)}%
-                </span>
-                <span style={{ color: '#64748B', fontSize: '14px', fontWeight: '600' }}>24h</span>
-              </div>
-            )}
-            {selectedAsset !== 'BTC' && stockData[selectedAsset] && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}>
-                <span style={{
-                  color: stockData[selectedAsset].change >= 0 ? '#10B981' : '#EF4444',
-                  fontSize: '16px',
-                  fontWeight: '700'
-                }}>
-                  {stockData[selectedAsset].change >= 0 ? '↗' : '↘'} {Math.abs(stockData[selectedAsset].change).toFixed(2)}%
-                </span>
-                <span style={{ color: '#64748B', fontSize: '14px', fontWeight: '600' }}>24h</span>
-              </div>
-            )}
-          </div>
-
-          {/* Asset List */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <h4 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', margin: '0 0 16px 0' }}>
-              All Assets
-            </h4>
-            {assets.map((asset) => {
-              const price = asset.symbol === 'BTC' ? marketData?.usd : stockData[asset.symbol]?.price
-              const change = asset.symbol === 'BTC' ? marketData?.usd_24h_change : stockData[asset.symbol]?.change
-              
-              return (
-                <div key={asset.symbol} style={{
+            <h3 style={{ color: '#0f172a', marginBottom: '24px' }}>Cold Storage Transaction History</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {coldStorage.transactions.slice(-10).reverse().map((tx, index) => (
+                <div key={tx.id} style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  padding: '12px 16px',
-                  background: selectedAsset === asset.symbol 
-                    ? 'rgba(6, 182, 212, 0.1)' 
-                    : 'rgba(255, 255, 255, 0.5)',
+                  padding: '16px',
+                  background: 'rgba(6, 182, 212, 0.05)',
                   borderRadius: '12px',
-                  border: selectedAsset === asset.symbol 
-                    ? '1px solid rgba(6, 182, 212, 0.2)'
-                    : '1px solid rgba(6, 182, 212, 0.1)',
-                  cursor: 'pointer'
-                }} onClick={() => setSelectedAsset(asset.symbol)}>
-                  <div>
-                    <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>
-                      {asset.symbol}
-                    </h5>
-                    <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
-                      {asset.name}
-                    </p>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>
-                      {formatCurrency(price || 0)}
-                    </div>
-                    {change !== undefined && (
-                      <div style={{
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        color: change >= 0 ? '#10B981' : '#EF4444'
-                      }}>
-                        {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Custody Component
-function Custody({ portfolio, onMultisigApprove, formatCurrency }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }} className="slide-up">
-      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <h1 style={{
-          fontSize: '56px',
-          fontWeight: '900',
-          margin: 0,
-          background: 'linear-gradient(135deg, #0F172A 0%, #06B6D4 50%, #10B981 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          letterSpacing: '-0.03em',
-          marginBottom: '16px'
-        }}>
-          Custody & Storage
-        </h1>
-        <p style={{ fontSize: '22px', color: '#475569', margin: 0, fontWeight: '500' }}>
-          Multi-signature security with institutional-grade protection
-        </p>
-      </div>
-
-      {/* Hot Storage */}
-      <div style={{
-        background: 'rgba(245, 158, 11, 0.05)',
-        borderRadius: '24px',
-        padding: '32px',
-        border: '1px solid rgba(245, 158, 11, 0.2)',
-        backdropFilter: 'blur(12px)'
-      }}>
-        <h3 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '24px', color: '#F59E0B' }}>
-          🔥 Hot Storage
-        </h3>
-        <p style={{ color: '#92400E', marginBottom: '20px' }}>
-          Instant access for high-frequency trading
-        </p>
-        
-        {portfolio.hotStorage.trades.length > 0 ? (
-          <div>
-            <h4 style={{ color: '#F59E0B', marginBottom: '16px' }}>Active Hot Storage Trades:</h4>
-            {portfolio.hotStorage.trades.map(trade => (
-              <div key={trade.id} style={{
-                padding: '16px',
-                margin: '8px 0',
-                background: 'rgba(245, 158, 11, 0.1)',
-                borderRadius: '12px',
-                border: '1px solid rgba(245, 158, 11, 0.2)'
-              }}>
-                <strong>{trade.side} {trade.symbol}</strong> - {formatCurrency(trade.amountUSD)}
-                <br />
-                <small>Transferred to hot storage • Instant access available</small>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p style={{ color: '#92400E', fontStyle: 'italic' }}>
-            No assets in hot storage. Transfer completed trades to enable instant access.
-          </p>
-        )}
-      </div>
-
-      {/* Cold Storage */}
-      <div style={{
-        background: 'rgba(59, 130, 246, 0.05)',
-        borderRadius: '24px',
-        padding: '32px',
-        border: '1px solid rgba(59, 130, 246, 0.2)',
-        backdropFilter: 'blur(12px)'
-      }}>
-        <h3 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '24px', color: '#3B82F6' }}>
-          ❄️ Cold Storage
-        </h3>
-        <p style={{ color: '#1E40AF', marginBottom: '20px' }}>
-          Maximum security with multi-signature protection
-        </p>
-
-        {/* Pending Multi-sig Approvals */}
-        {portfolio.coldStorage.pending.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <h4 style={{ color: '#3B82F6', marginBottom: '16px' }}>⏳ Pending Multi-sig Approval:</h4>
-            {portfolio.coldStorage.pending.map(trade => (
-              <div key={trade.id} style={{
-                padding: '20px',
-                margin: '12px 0',
-                background: 'rgba(245, 158, 11, 0.1)',
-                borderRadius: '12px',
-                border: '2px solid rgba(245, 158, 11, 0.3)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <strong>{trade.side} {trade.symbol}</strong> - {formatCurrency(trade.amountUSD)}
-                  <br />
-                  <small style={{ color: '#F59E0B' }}>
-                    ⚠️ Awaiting multi-signature confirmation (2 of 3 required)
-                  </small>
-                </div>
-                <button
-                  onClick={() => onMultisigApprove(trade.id)}
-                  style={{
-                    padding: '12px 24px',
-                    background: 'linear-gradient(135deg, #10B981 0%, #22C55E 100%)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-                  }}
-                >
-                  ✓ Approve Multi-sig
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Confirmed Cold Storage */}
-        {portfolio.coldStorage.trades.length > 0 && (
-          <div>
-            <h4 style={{ color: '#3B82F6', marginBottom: '16px' }}>✅ Confirmed Cold Storage:</h4>
-            {portfolio.coldStorage.trades.map(trade => (
-              <div key={trade.id} style={{
-                padding: '16px',
-                margin: '8px 0',
-                background: 'rgba(59, 130, 246, 0.1)',
-                borderRadius: '12px',
-                border: '1px solid rgba(59, 130, 246, 0.2)'
-              }}>
-                <strong>{trade.side} {trade.symbol}</strong> - {formatCurrency(trade.amountUSD)}
-                <br />
-                <small style={{ color: '#10B981' }}>
-                  ✅ Multi-sig confirmed • Maximum security enabled
-                </small>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {portfolio.coldStorage.trades.length === 0 && portfolio.coldStorage.pending.length === 0 && (
-          <p style={{ color: '#1E40AF', fontStyle: 'italic' }}>
-            No assets in cold storage. Transfer completed trades to enable multi-signature protection.
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// Reporting Component
-function Reporting({ portfolio, formatCurrency }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }} className="slide-up">
-      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <h1 style={{
-          fontSize: '56px',
-          fontWeight: '900',
-          margin: 0,
-          background: 'linear-gradient(135deg, #0F172A 0%, #06B6D4 50%, #10B981 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          letterSpacing: '-0.03em',
-          marginBottom: '16px'
-        }}>
-          Reports & Analytics
-        </h1>
-        <p style={{ fontSize: '22px', color: '#475569', margin: 0, fontWeight: '500' }}>
-          Comprehensive portfolio reporting and trade analytics
-        </p>
-      </div>
-
-      <div style={{
-        background: 'rgba(255, 255, 255, 0.9)',
-        borderRadius: '24px',
-        padding: '32px',
-        border: '1px solid rgba(6, 182, 212, 0.1)',
-        backdropFilter: 'blur(12px)',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
-      }}>
-        <h3 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '24px', color: '#0F172A' }}>
-          Portfolio Summary
-        </h3>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-          <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(6, 182, 212, 0.05)', borderRadius: '12px' }}>
-            <h4 style={{ margin: '0 0 8px 0', color: '#06B6D4' }}>Total Value</h4>
-            <p style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#0F172A' }}>
-              {formatCurrency(portfolio.totalValue)}
-            </p>
-          </div>
-          
-          <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '12px' }}>
-            <h4 style={{ margin: '0 0 8px 0', color: '#10B981' }}>Total Trades</h4>
-            <p style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#0F172A' }}>
-              {portfolio.trades.length}
-            </p>
-          </div>
-          
-          <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '12px' }}>
-            <h4 style={{ margin: '0 0 8px 0', color: '#F59E0B' }}>Hot Storage</h4>
-            <p style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#0F172A' }}>
-              {portfolio.hotStorage.trades.length}
-            </p>
-          </div>
-          
-          <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px' }}>
-            <h4 style={{ margin: '0 0 8px 0', color: '#3B82F6' }}>Cold Storage</h4>
-            <p style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#0F172A' }}>
-              {portfolio.coldStorage.trades.length}
-            </p>
-          </div>
-        </div>
-
-        {portfolio.trades.length > 0 && (
-          <>
-            <h4 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '20px', color: '#0F172A' }}>
-              Complete Trade History
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {portfolio.trades.map(trade => (
-                <div key={trade.id} style={{
-                  padding: '20px',
-                  background: trade.side === 'BUY' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
-                  borderRadius: '12px',
-                  border: `1px solid ${trade.side === 'BUY' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
+                  border: '1px solid rgba(6, 182, 212, 0.1)'
                 }}>
                   <div>
-                    <strong style={{ color: '#0F172A' }}>
-                      {trade.side} {trade.symbol} - {formatCurrency(trade.amountUSD)}
-                    </strong>
-                    <br />
-                    <small style={{ color: '#64748B' }}>
-                      {new Date(trade.timestamp).toLocaleString()} • Storage: {trade.storage || 'Not transferred'}
-                    </small>
+                    <div style={{ fontWeight: '600', color: '#0f172a' }}>
+                      {tx.type === 'deposit' ? '⬇️ Deposit' : '⬆️ Withdrawal'}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#64748b' }}>
+                      {new Date(tx.timestamp).toLocaleString()}
+                      {tx.multisigApproved && ' • Multisig Approved'}
+                    </div>
                   </div>
-                  <div style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    background: trade.side === 'BUY' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    color: trade.side === 'BUY' ? '#10B981' : '#EF4444',
-                    fontWeight: '700',
-                    fontSize: '12px'
-                  }}>
-                    {trade.side === 'BUY' ? '↗ BUY' : '↘ SELL'}
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{
+                      fontWeight: '600',
+                      color: tx.type === 'deposit' ? '#22c55e' : '#f59e0b'
+                    }}>
+                      {tx.type === 'deposit' ? '+' : '-'}{tx.amount.toFixed(6)} BTC
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#64748b' }}>
+                      {formatCurrency(tx.amount * (marketData?.usd || 0))}
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
   )
 }
 
-// Simple placeholder components
-function CompanyInfo() {
+// Additional Page Components
+function ReportingInterface({ portfolio, formatCurrency }) {
   return (
-    <div style={{ textAlign: 'center' }}>
-      <h1 style={{ fontSize: '48px', fontWeight: '900', marginBottom: '32px' }}>Company Information</h1>
-      <div style={{ background: 'rgba(255, 255, 255, 0.9)', borderRadius: '24px', padding: '48px' }}>
-        <h2>Foresight Capital</h2>
-        <p>Founded: 2020</p>
-        <p>Headquarters: New York, NY</p>
-        <p>Assets Under Management: $2.5B</p>
-        <p>Specialization: Digital Asset Treasury Management</p>
-        <p>Regulatory Status: SEC Registered Investment Advisor</p>
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 253, 250, 0.9) 100%)',
+      borderRadius: '24px',
+      padding: '48px',
+      border: '1px solid rgba(6, 182, 212, 0.2)',
+      backdropFilter: 'blur(20px)'
+    }}>
+      <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#0f172a', marginBottom: '32px' }}>
+        Treasury Reports
+      </h1>
+      <div style={{ textAlign: 'center', padding: '64px 0', color: '#64748b' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>📊</div>
+        <h3>Advanced Reporting Coming Soon</h3>
+        <p>Generate comprehensive treasury reports, compliance documentation, and audit trails.</p>
       </div>
     </div>
   )
 }
 
-function Terms() {
+function CompanyProfile() {
   return (
-    <div style={{ textAlign: 'center' }}>
-      <h1 style={{ fontSize: '48px', fontWeight: '900', marginBottom: '32px' }}>Terms & Conditions</h1>
-      <div style={{ background: 'rgba(255, 255, 255, 0.9)', borderRadius: '24px', padding: '48px', textAlign: 'left' }}>
-        <h3>1. Acceptance of Terms</h3>
-        <p>By using this platform, you agree to be bound by these terms and conditions.</p>
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 253, 250, 0.9) 100%)',
+      borderRadius: '24px',
+      padding: '48px',
+      border: '1px solid rgba(6, 182, 212, 0.2)',
+      backdropFilter: 'blur(20px)'
+    }}>
+      <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#0f172a', marginBottom: '32px' }}>
+        Company Profile
+      </h1>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' }}>
+        <div>
+          <h3 style={{ color: '#0f172a', marginBottom: '16px' }}>Company Information</h3>
+          <div style={{ background: 'rgba(6, 182, 212, 0.05)', borderRadius: '12px', padding: '24px' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <strong>Company Name:</strong> Treasury Corp
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <strong>Founded:</strong> 2020
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <strong>Industry:</strong> Financial Technology
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <strong>Headquarters:</strong> San Francisco, CA
+            </div>
+            <div>
+              <strong>Treasury Lead:</strong> John Smith
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 style={{ color: '#0f172a', marginBottom: '16px' }}>Bitcoin Treasury Policy</h3>
+          <div style={{ background: 'rgba(6, 182, 212, 0.05)', borderRadius: '12px', padding: '24px' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <strong>Target Allocation:</strong> 5-15% of cash reserves
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <strong>Rebalancing:</strong> Monthly review
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <strong>Custody:</strong> Multi-signature cold storage
+            </div>
+            <div>
+              <strong>Risk Management:</strong> Dollar-cost averaging strategy
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PrivacyPolicy() {
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 253, 250, 0.9) 100%)',
+      borderRadius: '24px',
+      padding: '48px',
+      border: '1px solid rgba(6, 182, 212, 0.2)',
+      backdropFilter: 'blur(20px)',
+      maxHeight: '80vh',
+      overflow: 'auto'
+    }}>
+      <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#0f172a', marginBottom: '32px' }}>
+        Privacy Policy
+      </h1>
+      
+      <div style={{ color: '#374151', lineHeight: '1.6' }}>
+        <h3>1. Information We Collect</h3>
+        <p>We collect information necessary to provide our Bitcoin treasury management services, including account information, transaction data, and usage analytics.</p>
         
-        <h3>2. Trading Services</h3>
-        <p>Our platform provides institutional-grade Bitcoin and digital asset trading services.</p>
+        <h3>2. How We Use Information</h3>
+        <p>Your information is used to provide secure treasury management services, ensure compliance with regulations, and improve our platform.</p>
+        
+        <h3>3. Data Security</h3>
+        <p>We implement industry-leading security measures including encryption, multi-signature protocols, and secure storage to protect your data and assets.</p>
+        
+        <h3>4. Information Sharing</h3>
+        <p>We do not sell or share your personal information with third parties except as required by law or to provide our services.</p>
+        
+        <h3>5. Contact Us</h3>
+        <p>For privacy-related questions, contact us at privacy@foresightenterprise.com</p>
+      </div>
+    </div>
+  )
+}
+
+function TermsConditions() {
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 253, 250, 0.9) 100%)',
+      borderRadius: '24px',
+      padding: '48px',
+      border: '1px solid rgba(6, 182, 212, 0.2)',
+      backdropFilter: 'blur(20px)',
+      maxHeight: '80vh',
+      overflow: 'auto'
+    }}>
+      <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#0f172a', marginBottom: '32px' }}>
+        Terms & Conditions
+      </h1>
+      
+      <div style={{ color: '#374151', lineHeight: '1.6' }}>
+        <h3>1. Service Agreement</h3>
+        <p>By using Foresight Enterprise, you agree to these terms and conditions. Our platform provides Bitcoin treasury management services for institutional clients.</p>
+        
+        <h3>2. Eligibility</h3>
+        <p>Services are available to qualified institutional investors and corporate treasuries that meet our verification requirements.</p>
         
         <h3>3. Risk Disclosure</h3>
-        <p>Digital asset trading involves substantial risk and may not be suitable for all investors.</p>
+        <p>Bitcoin and cryptocurrency investments carry significant risk. Past performance does not guarantee future results. Consult with financial advisors before making investment decisions.</p>
         
         <h3>4. Custody Services</h3>
-        <p>We provide multi-signature cold storage solutions with institutional insurance coverage.</p>
+        <p>We provide secure custody solutions including multi-signature wallets and cold storage. Clients maintain ultimate control of their private keys.</p>
         
-        <h3>5. Compliance</h3>
-        <p>All activities are subject to applicable regulatory requirements and anti-money laundering policies.</p>
-      </div>
-    </div>
-  )
-}
-
-function Privacy() {
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <h1 style={{ fontSize: '48px', fontWeight: '900', marginBottom: '32px' }}>Privacy Policy</h1>
-      <div style={{ background: 'rgba(255, 255, 255, 0.9)', borderRadius: '24px', padding: '48px', textAlign: 'left' }}>
-        <h3>Data Collection</h3>
-        <p>We collect only the information necessary to provide our services and comply with regulatory requirements.</p>
+        <h3>5. Fees and Charges</h3>
+        <p>Trading fees of 0.5% apply to all transactions. Additional custody and management fees may apply based on your service level.</p>
         
-        <h3>Data Usage</h3>
-        <p>Your data is used solely for account management, trading execution, and regulatory compliance.</p>
+        <h3>6. Limitation of Liability</h3>
+        <p>Our liability is limited to the extent permitted by law. We are not responsible for market losses or external security breaches.</p>
         
-        <h3>Data Protection</h3>
-        <p>We employ bank-grade encryption and security measures to protect your information.</p>
-        
-        <h3>Data Sharing</h3>
-        <p>We do not sell or share your personal data with third parties except as required by law.</p>
-        
-        <h3>Your Rights</h3>
-        <p>You have the right to access, correct, or delete your personal information at any time.</p>
+        <h3>7. Contact</h3>
+        <p>For questions about these terms, contact legal@foresightenterprise.com</p>
       </div>
     </div>
   )
