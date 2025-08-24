@@ -82,26 +82,14 @@ export default function ForesightEnterprise() {
   useEffect(() => {
     const fetchStockData = async () => {
       try {
-        const stocks = ['MSTR', 'STRC', 'STRK', 'STRF', 'STRD']
-        const promises = stocks.map(async (symbol) => {
-          // Using Alpha Vantage API (you'd need a real API key)
-          // For demo, using mock data with realistic values
-          const mockData = {
-            MSTR: { price: 485.50, change: 8.2 },
-            STRC: { price: 52.30, change: -2.1 },
-            STRK: { price: 28.90, change: 5.7 },
-            STRF: { price: 31.45, change: 3.2 },
-            STRD: { price: 19.80, change: -1.8 }
-          }
-          return { symbol, ...mockData[symbol] }
-        })
-        
-        const results = await Promise.all(promises)
-        const stockDataObj = {}
-        results.forEach(stock => {
-          stockDataObj[stock.symbol] = stock
-        })
-        setStockData(stockDataObj)
+        const mockData = {
+          MSTR: { price: 485.50, change: 8.2 },
+          STRC: { price: 52.30, change: -2.1 },
+          STRK: { price: 28.90, change: 5.7 },
+          STRF: { price: 31.45, change: 3.2 },
+          STRD: { price: 19.80, change: -1.8 }
+        }
+        setStockData(mockData)
         setLoading(false)
       } catch (error) {
         console.error('Failed to fetch stock data:', error)
@@ -110,7 +98,7 @@ export default function ForesightEnterprise() {
     }
 
     fetchStockData()
-    const interval = setInterval(fetchStockData, 60000) // Update every minute
+    const interval = setInterval(fetchStockData, 60000)
     return () => clearInterval(interval)
   }, [])
 
@@ -368,6 +356,15 @@ export default function ForesightEnterprise() {
     setShowUserMenu(false)
   }
 
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+
   return (
     <>
       <Head>
@@ -500,10 +497,10 @@ export default function ForesightEnterprise() {
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
             }}>
               {[
-                { id: 'dashboard', name: 'Portfolio', icon: 'chart-line' },
-                { id: 'trade', name: 'Trading', icon: 'exchange' },
-                { id: 'custody', name: 'Custody', icon: 'shield' },
-                { id: 'reporting', name: 'Reports', icon: 'document' }
+                { id: 'dashboard', name: 'Portfolio' },
+                { id: 'trade', name: 'Trading' },
+                { id: 'custody', name: 'Custody' },
+                { id: 'reporting', name: 'Reports' }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -628,7 +625,7 @@ export default function ForesightEnterprise() {
                     
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <button 
-                        onClick={() => setActiveTab('company')}
+                        onClick={() => {setActiveTab('company'); setShowUserMenu(false)}}
                         style={{
                           padding: '12px 16px',
                           background: 'transparent',
@@ -648,7 +645,7 @@ export default function ForesightEnterprise() {
                       </button>
                       
                       <button 
-                        onClick={() => setActiveTab('terms')}
+                        onClick={() => {setActiveTab('terms'); setShowUserMenu(false)}}
                         style={{
                           padding: '12px 16px',
                           background: 'transparent',
@@ -668,7 +665,7 @@ export default function ForesightEnterprise() {
                       </button>
                       
                       <button 
-                        onClick={() => setActiveTab('privacy')}
+                        onClick={() => {setActiveTab('privacy'); setShowUserMenu(false)}}
                         style={{
                           padding: '12px 16px',
                           background: 'transparent',
@@ -818,37 +815,12 @@ export default function ForesightEnterprise() {
 
         {/* Portfolio Detail Modal */}
         {showPortfolioDetail && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            background: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 300,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.95)',
-              borderRadius: '24px',
-              padding: '32px',
-              maxWidth: '600px',
-              width: '90%',
-              maxHeight: '80vh',
-              overflow: 'auto',
-              border: '1px solid rgba(6, 182, 212, 0.1)',
-              backdropFilter: 'blur(20px)'
-            }}>
-              <PortfolioDetailModal 
-                portfolio={portfolio} 
-                marketData={marketData} 
-                stockData={stockData}
-                onClose={() => setShowPortfolioDetail(false)}
-              />
-            </div>
-          </div>
+          <PortfolioDetailModal 
+            portfolio={portfolio} 
+            marketData={marketData} 
+            stockData={stockData}
+            onClose={() => setShowPortfolioDetail(false)}
+          />
         )}
 
         {/* Main Content */}
@@ -950,145 +922,168 @@ function PortfolioDetailModal({ portfolio, marketData, stockData, onClose }) {
   }, 0)
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#0F172A' }}>
-          Portfolio Breakdown
-        </h3>
-        <button 
-          onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            fontSize: '24px',
-            cursor: 'pointer',
-            color: '#6B7280'
-          }}
-        >
-          ×
-        </button>
-      </div>
-
-      {/* Total Value */}
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      background: 'rgba(0, 0, 0, 0.5)',
+      zIndex: 300,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
       <div style={{
-        background: 'rgba(6, 182, 212, 0.05)',
-        borderRadius: '16px',
-        padding: '24px',
-        marginBottom: '24px',
-        border: '1px solid rgba(6, 182, 212, 0.1)'
+        background: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: '24px',
+        padding: '32px',
+        maxWidth: '600px',
+        width: '90%',
+        maxHeight: '80vh',
+        overflow: 'auto',
+        border: '1px solid rgba(6, 182, 212, 0.1)',
+        backdropFilter: 'blur(20px)'
       }}>
-        <h4 style={{ fontSize: '16px', color: '#64748B', margin: '0 0 8px 0' }}>Total Portfolio Value</h4>
-        <div style={{ fontSize: '36px', fontWeight: '900', color: '#0F172A' }}>
-          {formatCurrency(portfolio.totalValue)}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#0F172A' }}>
+            Portfolio Breakdown
+          </h3>
+          <button 
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              color: '#6B7280'
+            }}
+          >
+            ×
+          </button>
         </div>
-      </div>
 
-      {/* Asset Breakdown */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* Cash */}
+        {/* Total Value */}
         <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '16px',
-          background: 'rgba(16, 185, 129, 0.05)',
-          borderRadius: '12px',
-          border: '1px solid rgba(16, 185, 129, 0.1)'
+          background: 'rgba(6, 182, 212, 0.05)',
+          borderRadius: '16px',
+          padding: '24px',
+          marginBottom: '24px',
+          border: '1px solid rgba(6, 182, 212, 0.1)'
         }}>
-          <div>
-            <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>Cash (USD)</h5>
-            <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748B' }}>Available for trading</p>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '20px', fontWeight: '800', color: '#10B981' }}>
-              {formatCurrency(portfolio.cashUSD)}
-            </div>
-            <div style={{ fontSize: '12px', color: '#64748B' }}>
-              {((portfolio.cashUSD / portfolio.totalValue) * 100).toFixed(1)}%
-            </div>
+          <h4 style={{ fontSize: '16px', color: '#64748B', margin: '0 0 8px 0' }}>Total Portfolio Value</h4>
+          <div style={{ fontSize: '36px', fontWeight: '900', color: '#0F172A' }}>
+            {formatCurrency(portfolio.totalValue)}
           </div>
         </div>
 
-        {/* Bitcoin */}
-        {portfolio.btcHoldings > 0 && (
+        {/* Asset Breakdown */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Cash */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '16px',
-            background: 'rgba(245, 158, 11, 0.05)',
+            background: 'rgba(16, 185, 129, 0.05)',
             borderRadius: '12px',
-            border: '1px solid rgba(245, 158, 11, 0.1)'
+            border: '1px solid rgba(16, 185, 129, 0.1)'
           }}>
             <div>
-              <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>Bitcoin</h5>
-              <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748B' }}>
-                {portfolio.btcHoldings.toFixed(6)} BTC
-              </p>
+              <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>Cash (USD)</h5>
+              <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748B' }}>Available for trading</p>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '20px', fontWeight: '800', color: '#F59E0B' }}>
-                {formatCurrency(btcValue)}
+              <div style={{ fontSize: '20px', fontWeight: '800', color: '#10B981' }}>
+                {formatCurrency(portfolio.cashUSD)}
               </div>
               <div style={{ fontSize: '12px', color: '#64748B' }}>
-                {((btcValue / portfolio.totalValue) * 100).toFixed(1)}%
+                {((portfolio.cashUSD / portfolio.totalValue) * 100).toFixed(1)}%
               </div>
             </div>
           </div>
-        )}
 
-        {/* Stocks */}
-        {Object.entries(portfolio.stockHoldings).map(([symbol, shares]) => {
-          if (shares <= 0) return null
-          const value = shares * (stockData[symbol]?.price || 0)
-          return (
-            <div key={symbol} style={{
+          {/* Bitcoin */}
+          {portfolio.btcHoldings > 0 && (
+            <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               padding: '16px',
-              background: 'rgba(139, 92, 246, 0.05)',
+              background: 'rgba(245, 158, 11, 0.05)',
               borderRadius: '12px',
-              border: '1px solid rgba(139, 92, 246, 0.1)'
+              border: '1px solid rgba(245, 158, 11, 0.1)'
             }}>
               <div>
-                <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>{symbol}</h5>
+                <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>Bitcoin</h5>
                 <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748B' }}>
-                  {shares.toFixed(2)} shares @ {formatCurrency(stockData[symbol]?.price || 0)}
+                  {portfolio.btcHoldings.toFixed(6)} BTC
                 </p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '20px', fontWeight: '800', color: '#8B5CF6' }}>
-                  {formatCurrency(value)}
+                <div style={{ fontSize: '20px', fontWeight: '800', color: '#F59E0B' }}>
+                  {formatCurrency(btcValue)}
                 </div>
                 <div style={{ fontSize: '12px', color: '#64748B' }}>
-                  {((value / portfolio.totalValue) * 100).toFixed(1)}%
+                  {((btcValue / portfolio.totalValue) * 100).toFixed(1)}%
                 </div>
               </div>
             </div>
-          )
-        })}
-      </div>
+          )}
 
-      {/* P/L Summary */}
-      <div style={{
-        marginTop: '24px',
-        padding: '20px',
-        background: portfolio.unrealizedPL >= 0 
-          ? 'rgba(16, 185, 129, 0.05)' 
-          : 'rgba(239, 68, 68, 0.05)',
-        borderRadius: '12px',
-        border: `1px solid ${portfolio.unrealizedPL >= 0 
-          ? 'rgba(16, 185, 129, 0.2)' 
-          : 'rgba(239, 68, 68, 0.2)'}`
-      }}>
-        <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#64748B' }}>Unrealized P/L</h4>
-        <div style={{ 
-          fontSize: '24px', 
-          fontWeight: '800', 
-          color: portfolio.unrealizedPL >= 0 ? '#10B981' : '#EF4444' 
+          {/* Stocks */}
+          {Object.entries(portfolio.stockHoldings).map(([symbol, shares]) => {
+            if (shares <= 0) return null
+            const value = shares * (stockData[symbol]?.price || 0)
+            return (
+              <div key={symbol} style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px',
+                background: 'rgba(139, 92, 246, 0.05)',
+                borderRadius: '12px',
+                border: '1px solid rgba(139, 92, 246, 0.1)'
+              }}>
+                <div>
+                  <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>{symbol}</h5>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748B' }}>
+                    {shares.toFixed(2)} shares @ {formatCurrency(stockData[symbol]?.price || 0)}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#8B5CF6' }}>
+                    {formatCurrency(value)}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748B' }}>
+                    {((value / portfolio.totalValue) * 100).toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* P/L Summary */}
+        <div style={{
+          marginTop: '24px',
+          padding: '20px',
+          background: portfolio.unrealizedPL >= 0 
+            ? 'rgba(16, 185, 129, 0.05)' 
+            : 'rgba(239, 68, 68, 0.05)',
+          borderRadius: '12px',
+          border: `1px solid ${portfolio.unrealizedPL >= 0 
+            ? 'rgba(16, 185, 129, 0.2)' 
+            : 'rgba(239, 68, 68, 0.2)'}`
         }}>
-          {portfolio.unrealizedPL >= 0 ? '+' : ''}{formatCurrency(portfolio.unrealizedPL)}
+          <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#64748B' }}>Unrealized P/L</h4>
+          <div style={{ 
+            fontSize: '24px', 
+            fontWeight: '800', 
+            color: portfolio.unrealizedPL >= 0 ? '#10B981' : '#EF4444' 
+          }}>
+            {portfolio.unrealizedPL >= 0 ? '+' : ''}{formatCurrency(portfolio.unrealizedPL)}
+          </div>
         </div>
       </div>
     </div>
@@ -1236,88 +1231,14 @@ function Dashboard({ marketData, stockData, loading, portfolio, onPortfolioClick
         gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
         gap: '24px'
       }}>
-        <div 
+        <KPICard 
+          title="Total Portfolio Value"
+          value={formatCurrency(portfolio.totalValue)}
+          subtitle="Cash + Bitcoin + Stocks"
+          icon="wallet"
+          primary={true}
           onClick={onPortfolioClick}
-          style={{
-            background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%)',
-            borderRadius: '20px',
-            padding: '28px',
-            border: '1px solid rgba(6, 182, 212, 0.2)',
-            backdropFilter: 'blur(12px)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            cursor: 'pointer',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-          className="hover-lift"
-        >
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '120px',
-            height: '120px',
-            background: 'radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 70%)',
-            borderRadius: '50%',
-            transform: 'translate(40%, -40%)'
-          }}></div>
-          
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              marginBottom: '20px'
-            }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                background: 'linear-gradient(135deg, #06B6D4 0%, #10B981 100%)',
-                borderRadius: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '20px',
-                color: 'white'
-              }}>
-                💼
-              </div>
-            </div>
-            
-            <div>
-              <h3 style={{
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#64748B',
-                marginBottom: '8px',
-                letterSpacing: '0.01em'
-              }}>
-                Total Portfolio Value
-              </h3>
-              <p style={{
-                fontSize: '32px',
-                fontWeight: '900',
-                margin: 0,
-                letterSpacing: '-0.02em',
-                lineHeight: '1',
-                marginBottom: '4px',
-                color: '#0F172A'
-              }}>
-                {formatCurrency(portfolio.totalValue)}
-              </p>
-              <p style={{
-                fontSize: '13px',
-                color: '#64748B',
-                margin: 0,
-                fontWeight: '500'
-              }}>
-                Cash + Bitcoin + Stocks
-              </p>
-            </div>
-          </div>
-        </div>
-
+        />
         <KPICard 
           title="Bitcoin Holdings" 
           value={formatBTC(portfolio.btcHoldings)}
@@ -1418,25 +1339,27 @@ function Dashboard({ marketData, stockData, loading, portfolio, onPortfolioClick
   )
 }
 
-function KPICard({ title, value, subtitle, change, icon, primary = false }) {
+function KPICard({ title, value, subtitle, change, icon, primary = false, onClick }) {
   return (
-    <div style={{
-      background: primary 
-        ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%)'
-        : 'rgba(255, 255, 255, 0.9)',
-      borderRadius: '20px',
-      padding: '28px',
-      border: primary 
-        ? '1px solid rgba(6, 182, 212, 0.2)'
-        : '1px solid rgba(6, 182, 212, 0.1)',
-      backdropFilter: 'blur(12px)',
-      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      cursor: 'pointer',
-      position: 'relative',
-      overflow: 'hidden'
-    }}
-    className="hover-lift"
+    <div 
+      onClick={onClick}
+      style={{
+        background: primary 
+          ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%)'
+          : 'rgba(255, 255, 255, 0.9)',
+        borderRadius: '20px',
+        padding: '28px',
+        border: primary 
+          ? '1px solid rgba(6, 182, 212, 0.2)'
+          : '1px solid rgba(6, 182, 212, 0.1)',
+        backdropFilter: 'blur(12px)',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: onClick ? 'pointer' : 'default',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+      className={onClick ? "hover-lift" : ""}
     >
       {primary && (
         <div style={{
@@ -1680,7 +1603,7 @@ function TradeRow({ trade, onTransferClick }) {
   )
 }
 
-// Enhanced Trading Component with Stock Support
+// Trading Component
 function Trading({ marketData, stockData, portfolio, executeTrade }) {
   const [selectedAsset, setSelectedAsset] = useState('BTC')
   const [selectedSide, setSelectedSide] = useState('BUY')
@@ -1782,4 +1705,504 @@ function Trading({ marketData, stockData, portfolio, executeTrade }) {
           padding: '32px',
           border: '1px solid rgba(6, 182, 212, 0.1)',
           backdropFilter: 'blur(12px)',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
+        }} className="hover-lift">
+          <h3 style={{
+            fontSize: '24px',
+            fontWeight: '800',
+            marginBottom: '32px',
+            color: '#0F172A'
+          }}>
+            Execute Trade
+          </h3>
+
+          {/* Asset Selection */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{
+              fontSize: '14px',
+              fontWeight: '700',
+              color: '#0F172A',
+              marginBottom: '12px',
+              display: 'block'
+            }}>
+              Select Asset
+            </label>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '8px'
+            }}>
+              {assets.map((asset) => (
+                <button
+                  key={asset.symbol}
+                  onClick={() => {
+                    setSelectedAsset(asset.symbol)
+                    setHasQuote(false)
+                    setTradeResult(null)
+                  }}
+                  style={{
+                    padding: '12px 8px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    transition: 'all 0.2s ease',
+                    background: selectedAsset === asset.symbol 
+                      ? (asset.type === 'crypto' 
+                          ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+                          : 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)')
+                      : 'rgba(107, 114, 128, 0.1)',
+                    color: selectedAsset === asset.symbol ? 'white' : '#6B7280'
+                  }}
+                >
+                  {asset.symbol}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Buy/Sell Toggle */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '12px',
+            marginBottom: '32px'
+          }}>
+            <button
+              onClick={() => {
+                setSelectedSide('BUY')
+                setHasQuote(false)
+                setTradeResult(null)
+              }}
+              style={{
+                padding: '16px',
+                borderRadius: '16px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '700',
+                fontSize: '16px',
+                transition: 'all 0.2s ease',
+                background: selectedSide === 'BUY' 
+                  ? 'linear-gradient(135deg, #10B981 0%, #22C55E 100%)'
+                  : 'rgba(16, 185, 129, 0.1)',
+                color: selectedSide === 'BUY' ? 'white' : '#10B981',
+                boxShadow: selectedSide === 'BUY' ? '0 8px 32px rgba(16, 185, 129, 0.3)' : 'none'
+              }}
+            >
+              🔥 Buy {selectedAsset}
+            </button>
+            <button
+              onClick={() => {
+                setSelectedSide('SELL')
+                setHasQuote(false)
+                setTradeResult(null)
+              }}
+              style={{
+                padding: '16px',
+                borderRadius: '16px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '700',
+                fontSize: '16px',
+                transition: 'all 0.2s ease',
+                background: selectedSide === 'SELL' 
+                  ? 'linear-gradient(135deg, #EF4444 0%, #F97316 100%)'
+                  : 'rgba(239, 68, 68, 0.1)',
+                color: selectedSide === 'SELL' ? 'white' : '#EF4444',
+                boxShadow: selectedSide === 'SELL' ? '0 8px 32px rgba(239, 68, 68, 0.3)' : 'none'
+              }}
+            >
+              📉 Sell {selectedAsset}
+            </button>
+          </div>
+
+          {/* Balance Info */}
+          <div style={{
+            padding: '16px',
+            background: 'rgba(6, 182, 212, 0.05)',
+            borderRadius: '12px',
+            marginBottom: '24px',
+            border: '1px solid rgba(6, 182, 212, 0.1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ fontSize: '14px', color: '#64748B' }}>Available Cash:</span>
+              <span style={{ fontWeight: '700', color: '#0F172A' }}>{formatCurrency(portfolio.cashUSD)}</span>
+            </div>
+            {selectedAsset === 'BTC' ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '14px', color: '#64748B' }}>Bitcoin Holdings:</span>
+                <span style={{ fontWeight: '700', color: '#0F172A' }}>{portfolio.btcHoldings.toFixed(6)} BTC</span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '14px', color: '#64748B' }}>{selectedAsset} Holdings:</span>
+                <span style={{ fontWeight: '700', color: '#0F172A' }}>
+                  {(portfolio.stockHoldings[selectedAsset] || 0).toFixed(2)} shares
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Amount Input */}
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: '700',
+                color: '#0F172A'
+              }}>
+                Trade Amount (USD)
+              </label>
+              <button
+                onClick={() => {
+                  setAmount(Math.floor(maxBuyAmount).toString())
+                  setHasQuote(false)
+                }}
+                style={{
+                  fontSize: '12px',
+                  padding: '4px 8px',
+                  background: 'transparent',
+                  border: '1px solid #06B6D4',
+                  borderRadius: '6px',
+                  color: '#06B6D4',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                MAX
+              </button>
+            </div>
+            <input
+              type="text"
+              value={amount}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9]/g, '')
+                setAmount(value)
+                setHasQuote(false)
+                setTradeResult(null)
+              }}
+              placeholder="1000000"
+              style={{
+                width: '100%',
+                padding: '16px 20px',
+                borderRadius: '16px',
+                border: '2px solid rgba(6, 182, 212, 0.2)',
+                background: 'rgba(255, 255, 255, 0.8)',
+                color: '#0F172A',
+                fontSize: '18px',
+                fontWeight: '700',
+                fontFamily: 'inherit',
+                outline: 'none'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#06B6D4'
+                e.target.style.boxShadow = '0 0 0 3px rgba(6, 182, 212, 0.1)'
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(6, 182, 212, 0.2)'
+                e.target.style.boxShadow = 'none'
+              }}
+            />
+          </div>
+
+          {/* Quote Section */}
+          {hasQuote && amount && getCurrentPrice() > 0 && (
+            <div style={{
+              padding: '20px',
+              background: 'rgba(6, 182, 212, 0.05)',
+              borderRadius: '16px',
+              marginBottom: '24px',
+              border: '1px solid rgba(6, 182, 212, 0.2)'
+            }}>
+              <h4 style={{
+                fontSize: '16px',
+                fontWeight: '800',
+                marginBottom: '16px',
+                color: selectedSide === 'BUY' ? '#10B981' : '#EF4444'
+              }}>
+                {selectedSide} {selectedAsset} Quote
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748B', fontSize: '14px' }}>
+                    Est. {selectedAsset === 'BTC' ? 'Bitcoin' : 'Shares'}:
+                  </span>
+                  <span style={{ fontWeight: '700', fontSize: '16px' }}>
+                    {selectedAsset === 'BTC' 
+                      ? `${estimatedQuantity.toFixed(6)} BTC`
+                      : `${estimatedQuantity.toFixed(2)} shares`
+                    }
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748B', fontSize: '14px' }}>Current Price:</span>
+                  <span style={{ fontWeight: '700', fontSize: '16px' }}>{formatCurrency(getCurrentPrice())}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748B', fontSize: '14px' }}>Fees (0.5%):</span>
+                  <span style={{ fontWeight: '700', fontSize: '16px' }}>{formatCurrency(fees)}</span>
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  paddingTop: '12px', 
+                  borderTop: '1px solid rgba(6, 182, 212, 0.2)' 
+                }}>
+                  <span style={{ color: '#0F172A', fontSize: '14px', fontWeight: '700' }}>
+                    {selectedSide === 'BUY' ? 'Total Cost:' : 'Net Received:'}
+                  </span>
+                  <span style={{ fontWeight: '900', fontSize: '18px', color: '#0F172A' }}>
+                    {formatCurrency(selectedSide === 'BUY' ? parseFloat(amount) + fees : parseFloat(amount) - fees)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Trade Result */}
+          {tradeResult && (
+            <div style={{
+              padding: '16px',
+              borderRadius: '12px',
+              marginBottom: '24px',
+              background: tradeResult.success ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              border: `1px solid ${tradeResult.success ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+              color: tradeResult.success ? '#10B981' : '#EF4444',
+              fontWeight: '600',
+              textAlign: 'center'
+            }}>
+              {tradeResult.success ? '✅' : '❌'} {tradeResult.message}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button
+              onClick={getQuote}
+              disabled={!amount || getCurrentPrice() <= 0}
+              style={{
+                width: '100%',
+                padding: '16px',
+                borderRadius: '16px',
+                border: 'none',
+                cursor: (amount && getCurrentPrice() > 0) ? 'pointer' : 'not-allowed',
+                fontWeight: '700',
+                fontSize: '16px',
+                background: (amount && getCurrentPrice() > 0) 
+                  ? 'rgba(6, 182, 212, 0.1)'
+                  : 'rgba(148, 163, 184, 0.1)',
+                color: (amount && getCurrentPrice() > 0) ? '#06B6D4' : '#94A3B8',
+                transition: 'all 0.2s ease',
+                opacity: (amount && getCurrentPrice() > 0) ? 1 : 0.5
+              }}
+            >
+              ⚡ Get Real-Time Quote
+            </button>
+            
+            {hasQuote && (
+              <button
+                onClick={handleTrade}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  borderRadius: '16px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: '700',
+                  fontSize: '16px',
+                  background: selectedSide === 'BUY' 
+                    ? 'linear-gradient(135deg, #10B981 0%, #22C55E 100%)'
+                    : 'linear-gradient(135deg, #EF4444 0%, #F97316 100%)',
+                  color: 'white',
+                  transition: 'all 0.2s ease',
+                  boxShadow: selectedSide === 'BUY' 
+                    ? '0 8px 32px rgba(16, 185, 129, 0.3)'
+                    : '0 8px 32px rgba(239, 68, 68, 0.3)'
+                }}
+                onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+              >
+                🚀 Execute {selectedSide} Order
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Market Data Panel */}
+        <MarketDataPanel 
+          selectedAsset={selectedAsset}
+          marketData={marketData}
+          stockData={stockData}
+          assets={assets}
+          formatCurrency={formatCurrency}
+        />
+      </div>
+    </div>
+  )
+}
+
+// Market Data Panel Component
+function MarketDataPanel({ selectedAsset, marketData, stockData, assets, formatCurrency }) {
+  const getCurrentPrice = () => {
+    if (selectedAsset === 'BTC') return marketData?.usd || 0
+    return stockData[selectedAsset]?.price || 0
+  }
+
+  return (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.9)',
+      borderRadius: '24px',
+      padding: '32px',
+      border: '1px solid rgba(6, 182, 212, 0.1)',
+      backdropFilter: 'blur(12px)',
+      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
+    }} className="hover-lift">
+      <h3 style={{
+        fontSize: '24px',
+        fontWeight: '800',
+        marginBottom: '32px',
+        color: '#0F172A'
+      }}>
+        Live Market Data
+      </h3>
+
+      {/* Selected Asset Price */}
+      <div style={{
+        textAlign: 'center',
+        marginBottom: '32px',
+        padding: '24px',
+        background: 'rgba(6, 182, 212, 0.05)',
+        borderRadius: '16px',
+        border: '1px solid rgba(6, 182, 212, 0.1)'
+      }}>
+        <h4 style={{ fontSize: '16px', color: '#64748B', margin: '0 0 8px 0' }}>
+          {selectedAsset} Price
+        </h4>
+        <div style={{
+          fontSize: '36px',
+          fontWeight: '900',
+          marginBottom: '8px',
+          letterSpacing: '-0.02em',
+          color: '#0F172A'
+        }}>
+          {formatCurrency(getCurrentPrice())}
+        </div>
+        {selectedAsset === 'BTC' && marketData && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}>
+            <span style={{
+              color: marketData.usd_24h_change >= 0 ? '#10B981' : '#EF4444',
+              fontSize: '16px',
+              fontWeight: '700'
+            }}>
+              {marketData.usd_24h_change >= 0 ? '↗' : '↘'} {Math.abs(marketData.usd_24h_change).toFixed(2)}%
+            </span>
+            <span style={{
+              color: '#64748B',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}>
+              24h
+            </span>
+          </div>
+        )}
+        {selectedAsset !== 'BTC' && stockData[selectedAsset] && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}>
+            <span style={{
+              color: stockData[selectedAsset].change >= 0 ? '#10B981' : '#EF4444',
+              fontSize: '16px',
+              fontWeight: '700'
+            }}>
+              {stockData[selectedAsset].change >= 0 ? '↗' : '↘'} {Math.abs(stockData[selectedAsset].change).toFixed(2)}%
+            </span>
+            <span style={{
+              color: '#64748B',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}>
+              24h
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Asset List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <h4 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', margin: '0 0 16px 0' }}>
+          All Assets
+        </h4>
+        {assets.map((asset) => {
+          const price = asset.symbol === 'BTC' ? marketData?.usd : stockData[asset.symbol]?.price
+          const change = asset.symbol === 'BTC' ? marketData?.usd_24h_change : stockData[asset.symbol]?.change
+          
+          return (
+            <div key={asset.symbol} style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '12px 16px',
+              background: selectedAsset === asset.symbol 
+                ? 'rgba(6, 182, 212, 0.1)' 
+                : 'rgba(255, 255, 255, 0.5)',
+              borderRadius: '12px',
+              border: selectedAsset === asset.symbol 
+                ? '1px solid rgba(6, 182, 212, 0.2)'
+                : '1px solid rgba(6, 182, 212, 0.1)',
+              transition: 'all 0.2s ease'
+            }}>
+              <div>
+                <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>
+                  {asset.symbol}
+                </h5>
+                <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
+                  {asset.name}
+                </p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>
+                  {formatCurrency(price || 0)}
+                </div>
+                {change !== undefined && (
+                  <div style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: change >= 0 ? '#10B981' : '#EF4444'
+                  }}>
+                    {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// Custody Component
+function Custody({ portfolio, onMultisigApprove }) {
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }} className="slide-up">
+      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <h1 style={{
+          fontSize
